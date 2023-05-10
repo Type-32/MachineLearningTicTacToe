@@ -10,7 +10,7 @@ var win = false
 function squareClicked(square) {
     //console.log(square);
     if (square.value != "") return
-    square.value = isTurn ? 'X' : 'O';
+    square.value = "X"//isTurn ? 'X' : 'O';
     isTurn = !isTurn;
     docMsg.innerHTML = isTurn ? "It is X's turn" : "It is O's turn"
 }
