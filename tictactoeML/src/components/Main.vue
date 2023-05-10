@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {defineComponent,reactive,ref} from 'vue'
+import {NButton} from 'naive-ui'
 
 //Make Tic Tac Toe game
 const counter = reactive({count: 0})
@@ -71,37 +72,37 @@ function checkEndgame(){
         return
     }
     if(tie){
-        document.getElementById("endgame-msg").classList.add("tie-text")
+        document.getElementById("endgame-msg")?.classList.add("tie-text")
         endmessage.value = "You Tied with the Algorithm!"
     }else if(win){
-        document.getElementById("endgame-msg").classList.add("win-text")
+        document.getElementById("endgame-msg")?.classList.add("win-text")
         endmessage.value = "You Won!"
     }else{
-        document.getElementById("endgame-msg").classList.add("lose-text")
+        document.getElementById("endgame-msg")?.classList.add("lose-text")
         endmessage.value = "You Lost!"
     }
-    document.getElementById("reset-game-button").classList.remove("hidden")
-    document.getElementById("endgame-msg").classList.remove("hidden")
-    document.getElementById("slot-button").classList.add("uninteractable")
+    document.getElementById("reset-game-button")?.classList.remove("hidden")
+    document.getElementById("endgame-msg")?.classList.remove("hidden")
+    document.getElementById("slot-button")?.classList.add("uninteractable")
 }
 function turntable(index){
     if(bvalues.value[index] != " "){
-        document.getElementById("warning-msg").classList.remove("hidden")
+        document.getElementById("warning-msg")?.classList.remove("hidden")
         return
     }else{
-        document.getElementById("warning-msg").classList.add("hidden")
+        document.getElementById("warning-msg")?.classList.add("hidden")
     }
     bvalues.value[index] = isturn.value ? "X" : "O"
     checkEndgame()
     isturn.value = !isturn.value
 }
 function resetGame(){
-    document.getElementById("endgame-msg").classList.add("hidden")
+    document.getElementById("endgame-msg")?.classList.add("hidden")
     for (let i = 0; i < bvalues.value.length; i++) {
         bvalues.value[i] = " "
     }
-    document.getElementById("reset-game-button").classList.add("hidden")
-    document.getElementById("slot-button").classList.remove("uninteractable")
+    document.getElementById("reset-game-button")?.classList.add("hidden")
+    document.getElementById("slot-button")?.classList.remove("uninteractable")
     isturn.value = true
 }
 const isturn = ref(true)
@@ -116,10 +117,10 @@ const isturn = ref(true)
         <h3>Status: {{isturn ? "X's turn" : "O's turn"}}</h3>
         <h3 class="hidden" id="endgame-msg">{{endmessage}}</h3>
         <h3 class="hidden warning" id="warning-msg">You cannot fill that spot! It is Occupied.</h3>
-        <button @click="resetGame" class="hidden" id="reset-game-button">Reset Game</button>
+        <NButton @click="resetGame" class="hidden" id="reset-game-button">Reset Game</NButton>
     </div>
     <main>
-        <input id="slot-button" type="button" v-for="(text,index) in bvalues" :key="index" v-model="bvalues[index]" @click="turntable(index)"/>
+        <input type="button" id="slot-button" v-for="(text,index) in bvalues" :key="index" v-model="bvalues[index]" @click="turntable(index)"/>
     </main>
 </template>
 
@@ -143,7 +144,7 @@ input[type="button"] {
     animation: ease-in-out 1s;
 }
 .hidden{
-    opacity: 0;
+    visibility: hidden;
     animation: ease-in-out 1s;
 }
 .win-text{
