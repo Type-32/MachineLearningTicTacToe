@@ -6,6 +6,7 @@ var docScore = document.getElementById("score")
 var score = 0
 var win = false
 docMsg.innerHTML = isTurn ? "It is X's turn" : "It is O's turn"
+
 function squareClicked(square) {
     console.log(square);
     if (square.value != "") return
