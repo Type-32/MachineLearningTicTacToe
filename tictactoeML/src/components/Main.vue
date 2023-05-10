@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {defineComponent,reactive,ref} from 'vue'
-import {NButton} from 'naive-ui'
+import {NButton, useMessage} from 'naive-ui'
 
 //Make Tic Tac Toe game
 const counter = reactive({count: 0})
@@ -83,14 +83,12 @@ function checkEndgame(){
     }
     document.getElementById("reset-game-button")?.classList.remove("hidden")
     document.getElementById("endgame-msg")?.classList.remove("hidden")
-    document.getElementById("slot-button")?.classList.add("uninteractable")
+    document.getElementById("main-container")?.classList.add("uninteractable")
 }
 function turntable(index){
     if(bvalues.value[index] != " "){
         document.getElementById("warning-msg")?.classList.remove("hidden")
         return
-    }else{
-        document.getElementById("warning-msg")?.classList.add("hidden")
     }
     bvalues.value[index] = isturn.value ? "X" : "O"
     checkEndgame()
@@ -102,10 +100,15 @@ function resetGame(){
         bvalues.value[i] = " "
     }
     document.getElementById("reset-game-button")?.classList.add("hidden")
-    document.getElementById("slot-button")?.classList.remove("uninteractable")
+    document.getElementById("main-container")?.classList.remove("uninteractable")
     isturn.value = true
 }
 const isturn = ref(true)
+
+const showModal = ref(true)
+function onPositiveClick() {
+    showModal.value = false
+}
 </script>
 
 <template>
@@ -116,16 +119,17 @@ const isturn = ref(true)
         <h4>You are: X</h4>
         <h3>Status: {{isturn ? "X's turn" : "O's turn"}}</h3>
         <h3 class="hidden" id="endgame-msg">{{endmessage}}</h3>
-        <h3 class="hidden warning" id="warning-msg">You cannot fill that spot! It is Occupied.</h3>
+        <!--<h3 class="hidden warning" id="warning-msg">You cannot fill that spot! It is Occupied.</h3>-->
         <NButton @click="resetGame" class="hidden" id="reset-game-button">Reset Game</NButton>
     </div>
-    <main>
-        <input type="button" id="slot-button" v-for="(text,index) in bvalues" :key="index" v-model="bvalues[index]" @click="turntable(index)"/>
+    <main id="main-container">
+        <input type="button" id="slot-button" class="slot-button" v-for="(text,index) in bvalues" :key="index" v-model="bvalues[index]" @click="turntable(index)"/>
     </main>
 </template>
 
 <style scoped>
 main {
+    margin: 10px 10px 10px 0px;
     display: grid;
     grid-template-columns: repeat(3, 50px);
     grid-template-rows: repeat(3, 50px);
@@ -141,25 +145,39 @@ input[type="button"] {
 .warning{
     color: red;
     font-weight: bold;
-    animation: ease-in-out 1s;
 }
 .hidden{
     visibility: hidden;
-    animation: ease-in-out 1s;
 }
 .win-text{
     color: green;
     font-weight: bold;
-    animation: ease-in-out 1s;
 }
 .lose-text{
     color: red;
     font-weight: bold;
-    animation: ease-in-out 1s;
 }
 .tie-text{
-    color: yellow;
+    color: #ffb700;
     font-weight: bold;
-    animation: ease-in-out 1s;
+}
+.slot-button{
+    font-size: 25px;
+    font-weight: bold;
+    animation: ease-in-out 0.15s;
+    border-width: 0px;
+    border-radius: 0px;
+    transition: ease-in-out 0.15s;
+    background-color: #e0e0e0;
+}
+.slot-button:hover{
+    background-color: rgb(176, 239, 161);
+    transition: ease-in-out 0.15s;
+    transform: scale(1.05);
+}
+.slot-button:active{
+    background-color: rgb(176, 239, 161);
+    transition: ease-in-out 0.05s;
+    transform: scale(0.95);
 }
 </style>
