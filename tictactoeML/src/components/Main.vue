@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {defineComponent,reactive,ref} from 'vue'
-import {NButton, NModal, NSpace, NSelect, NH1, NH2, NH3, NH4, NText, NDivider, useLoadingBar, useMessage} from 'naive-ui'
+import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, useLoadingBar, useMessage} from 'naive-ui'
 import * as tf from '@tensorflow/tfjs';
 
 const model = tf.sequential();
@@ -14,6 +14,7 @@ const modelValues = ref([[0,0,0,0,0,0,0,0,0]])
 const prevModelValues = ref([[0,0,0,0,0,0,0,0,0]])
 const trainedTimes = ref(0)
 const predictionIndex = ref(0)
+const setEpochs = ref(100)
 
 //Modals
 const errorModal = ref(false)
@@ -291,20 +292,16 @@ const iterationSelection = ref([
 async function applyIteration(){
     iterationSelectBar.value = false;
     applyIterationButton.value = false;
-    clearLabelsData()
-    clearTrainingData()
-    for (let n = 0; n < 2; n++) {
-        for (let i = 0; i < iterations.value; i++) {
-            //console.log(iterationData.value[i])
-            for (let j = 0; j < iterationData.value[i].length; j++) {
-                //console.log(iterationData.value[i][j])
-                recordTrainingData(iterationData.value[i][j])
-                recordTrainingData(invertRecordData(iterationData.value[i][j]))
-            }
-            for (let j = 0; j < iterationLabels.value[i].length; j++) {
-                recordLabelsData(iterationLabels.value[i][j])
-                recordLabelsData(invertRecordData(iterationLabels.value[i][j]))
-            }
+    for (let i = 0; i < iterations.value; i++) {
+        //console.log(iterationData.value[i])
+        for (let j = 0; j < iterationData.value[i].length; j++) {
+            //console.log(iterationData.value[i][j])
+            recordTrainingData(iterationData.value[i][j])
+            recordTrainingData(invertRecordData(iterationData.value[i][j]))
+        }
+        for (let j = 0; j < iterationLabels.value[i].length; j++) {
+            recordLabelsData(iterationLabels.value[i][j])
+            recordLabelsData(invertRecordData(iterationLabels.value[i][j]))
         }
     }
     let tempFlag:boolean = false
@@ -505,7 +502,7 @@ async function trainModel(announceMessage: boolean = true) {
     document.getElementById("config-buttons")?.classList.add("uninteractable")
     console.log(trainingData.value)
     try {
-        await model.fit(tf.tensor2d(trainingData.value), tf.tensor2d(labels.value), {epochs: 200}).then(() => {
+        await model.fit(tf.tensor2d(trainingData.value), tf.tensor2d(labels.value), {epochs: setEpochs.value}).then(() => {
             loadingBar.finish()
             if(announceMessage) {
                 floatingMessage.success("Machine Learning Model Trained Successfully!")
@@ -584,15 +581,22 @@ trainedTimes.value = model.getWeights().length
             <h1>Tic Tac Toe</h1>
             <h3>Powered by Machine Learning</h3>
         </div>
-        <!--<NText>{{iterationData[1][1]}}</NText>-->
         <NDivider/>
         <!--Selection Space-->
-        <NCard class="middle-align" v-if="mainContent === false">
-            <h3>Options</h3>
+        <NCard title="Model Options" class="middle-align" v-if="mainContent === false" size="medium">
+            <p>Iteration Model</p>
             <NSpace align="center" justify="center">
                 <NSelect :disabled="!iterationSelectBar" v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
                 <NButton type="primary" :disabled="!applyIterationButton" @click="applyIteration">Set Iteration</NButton>
             </NSpace>
+            <br>
+            <p>Epoch Amount for Training</p>
+            <NInputNumber
+                v-model:value="setEpochs"
+                placeholder="Integer Value, 100~5000"
+                :min="100"
+                :max="5000"
+            />
         </NCard>
 
         <!--Main Space-->
@@ -608,7 +612,7 @@ trainedTimes.value = model.getWeights().length
             <NSpace vertical>
                 <h4>You are: X</h4>
                 <h4>Status: {{isturn ? "X's turn" : "O's turn"}}</h4>
-                <h4 class="hidden" id="endgame-msg" v-show="matchFinished">{{endmessage}}</h4>
+                <h4 class="" id="endgame-msg" v-show="matchFinished">{{endmessage}}</h4>
                 <h4 id="trained-amount">Trained Times: {{trainedTimes}}; Prediction Index: {{predictionIndex}}</h4>
             </NSpace>
             <main id="main-container">
