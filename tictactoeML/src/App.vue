@@ -2,6 +2,7 @@
 import HelloWorld from './components/HelloWorld.vue'
 import TheWelcome from './components/TheWelcome.vue'
 import Main from "@/components/Main.vue";
+import { NLoadingBarProvider, NSpace } from "naive-ui";
 </script>
 
 <template>
@@ -16,7 +17,11 @@ import Main from "@/components/Main.vue";
   -->
 
   <main>
-    <Main />
+      <n-space>
+          <n-loading-bar-provider>
+              <Main />
+          </n-loading-bar-provider>
+      </n-space>
   </main>
 </template>
 
