@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {defineComponent,reactive,ref} from 'vue'
-import {NButton, NModal, NSpace, NLoadingBarProvider, useLoadingBar} from 'naive-ui'
+import {NButton, NModal, NSpace, NSelect, useLoadingBar, useMessage} from 'naive-ui'
 import * as tf from '@tensorflow/tfjs';
 
 const model = tf.sequential();
@@ -13,6 +13,7 @@ const bvalues = ref([" "," "," "," "," "," "," "," "," "])
 const modelValues = ref([[0,0,0,0,0,0,0,0,0]])
 const prevModelValues = ref([[0,0,0,0,0,0,0,0,0]])
 const trainedTimes = ref(0)
+const predictionIndex = ref(0)
 
 //Modals
 const errorModal = ref(false)
@@ -20,9 +21,86 @@ const trainingModal = ref(false)
 
 //Loading bar
 const loadingBar = useLoadingBar()
+const floatingMessage = useMessage()
 
-//Preset Record Array Data
-const presetTrainingData = ref([
+//Preset Record Array Data - Iteration 1, Horizontal + Perpendicular
+const iteration1Data = ref([
+    //Mid
+    [0,0,0,0,1,0,0,0,0],
+    [0,0,0,0,1,0,0,0,0],
+    [0,0,0,0,1,0,0,0,0],
+    [0,0,0,0,1,0,0,0,0],
+
+    //Mid Left
+    [0,0,0,1,0,0,0,0,0],
+    [0,0,0,1,0,0,0,0,0],
+
+    //Mid Right
+    [0,0,0,0,0,1,0,0,0],
+    [0,0,0,0,0,1,0,0,0]
+]);
+const iteration1Labels = ref([
+    //Init Mid
+    [1,0,0,0,1,0,0,0,1],
+    [0,0,1,0,1,0,1,0,0],
+    [0,1,0,0,1,0,0,1,0],
+    [0,0,0,1,1,1,0,0,0],
+
+    //Init Mid Left
+    [0,0,0,1,1,1,0,0,0],
+    [1,0,0,1,0,0,1,0,0],
+
+    //Init Mid Right
+    [0,0,0,1,1,1,0,0,0],
+    [0,0,1,0,0,1,0,0,1]
+]);
+
+//Preset Record Array Data - Iteration 2, Diagonal
+const iteration2Data = ref([
+    //Top Left
+    [1,0,0,0,0,0,0,0,0],
+    [1,0,0,0,0,0,0,0,0],
+    [1,0,0,0,0,0,0,0,0],
+
+    //Top Right
+    [0,0,1,0,0,0,0,0,0],
+    [0,0,1,0,0,0,0,0,0],
+    [0,0,1,0,0,0,0,0,0],
+
+    //Bottom Right
+    [0,0,0,0,0,0,0,0,1],
+    [0,0,0,0,0,0,0,0,1],
+    [0,0,0,0,0,0,0,0,1],
+
+    //Bottom Left
+    [0,0,0,0,0,0,1,0,0],
+    [0,0,0,0,0,0,1,0,0],
+    [0,0,0,0,0,0,1,0,0]
+]);
+const iteration2Labels = ref([
+    //Init Top Left
+    [1,0,0,1,0,0,1,0,0],
+    [1,0,0,0,1,0,0,0,1],
+    [1,1,1,0,0,0,0,0,0],
+
+    //Init Top Right
+    [0,0,1,0,0,1,0,0,1],
+    [0,0,1,0,1,0,1,0,0],
+    [1,1,1,0,0,0,0,0,0],
+
+    //Init Bottom Right
+    [0,0,1,0,0,1,0,0,1],
+    [1,0,0,0,1,0,0,0,1],
+    [0,0,0,0,0,0,1,1,1],
+
+    //Init Bottom Left
+    [1,0,0,1,0,0,1,0,0],
+    [0,0,1,0,1,0,1,0,0],
+    [0,0,0,0,0,0,1,1,1]
+]);
+
+//Preset Record Array Data - Iteration 3, Complementary Horizontal + Perpendicular
+const iteration3Data = ref([
     //Mid
     [0,0,0,0,1,0,0,0,0],
     [0,0,0,0,1,0,0,0,0],
@@ -57,7 +135,7 @@ const presetTrainingData = ref([
     [0,0,0,0,0,1,0,0,0],
     [0,0,0,0,0,1,0,0,0]
 ]);
-const presetLabels = ref([
+const iteration3Labels = ref([
     //Init Mid
     [1,0,0,0,1,0,0,0,1],
     [0,0,1,0,1,0,1,0,0],
@@ -93,29 +171,125 @@ const presetLabels = ref([
     [0,0,1,0,0,1,0,0,1]
 ]);
 
+//Preset Record Array Data - Iteration 4, Complementary Diagonal
+const iteration4Data = ref([
+    //Mid
+    [0,0,0,0,1,0,0,0,0],
+    [0,0,0,0,1,0,0,0,0],
+    [0,0,0,0,1,0,0,0,0],
+    [0,0,0,0,1,0,0,0,0],
+
+    //Top Left
+    [1,0,0,0,0,0,0,0,0],
+    [1,0,0,0,0,0,0,0,0],
+    [1,0,0,0,0,0,0,0,0],
+
+    //Top Right
+    [0,0,1,0,0,0,0,0,0],
+    [0,0,1,0,0,0,0,0,0],
+    [0,0,1,0,0,0,0,0,0],
+
+    //Bottom Right
+    [0,0,0,0,0,0,0,0,1],
+    [0,0,0,0,0,0,0,0,1],
+    [0,0,0,0,0,0,0,0,1],
+
+    //Bottom Left
+    [0,0,0,0,0,0,1,0,0],
+    [0,0,0,0,0,0,1,0,0],
+    [0,0,0,0,0,0,1,0,0],
+
+    //Mid Left
+    [0,0,0,1,0,0,0,0,0],
+    [0,0,0,1,0,0,0,0,0],
+
+    //Mid Right
+    [0,0,0,0,0,1,0,0,0],
+    [0,0,0,0,0,1,0,0,0]
+]);
+const iteration4Labels = ref([
+    //Init Mid
+    [1,0,0,0,1,0,0,0,1],
+    [0,0,1,0,1,0,1,0,0],
+    [0,1,0,0,1,0,0,1,0],
+    [0,0,0,1,1,1,0,0,0],
+
+    //Init Top Left
+    [1,0,0,1,0,0,1,0,0],
+    [1,0,0,0,1,0,0,0,1],
+    [1,1,1,0,0,0,0,0,0],
+
+    //Init Top Right
+    [0,0,1,0,0,1,0,0,1],
+    [0,0,1,0,1,0,1,0,0],
+    [1,1,1,0,0,0,0,0,0],
+
+    //Init Bottom Right
+    [0,0,1,0,0,1,0,0,1],
+    [1,0,0,0,1,0,0,0,1],
+    [0,0,0,0,0,0,1,1,1],
+
+    //Init Bottom Left
+    [1,0,0,1,0,0,1,0,0],
+    [0,0,1,0,1,0,1,0,0],
+    [0,0,0,0,0,0,1,1,1],
+
+    //Init Mid Left
+    [0,0,0,1,1,1,0,0,0],
+    [1,0,0,1,0,0,1,0,0],
+
+    //Init Mid Right
+    [0,0,0,1,1,1,0,0,0],
+    [0,0,1,0,0,1,0,0,1]
+]);
+
+//Preset Record Array Data - Iteration 5, Optimal Complementary Horizontal + Perpendicular
+const iteration5Data = ref([
+
+]);
+const iteration5Labels = ref([
+
+]);
+
+//Preset Record Array Data - Iteration 6, Optimal Complementary Diagonal
+const iteration6Data = ref([
+
+]);
+const iteration6Labels = ref([
+
+]);
+
+
 //Training Data Container
 const trainingData = ref([]);
 const labels = ref([]);
+const iterations = ref('it1');
+const iterationSelection = ref([
+    {
+        label:"Iteration 1",
+        value:'it1'
+    },
+    {
+        label:"Iteration 2",
+        value:'it2'
+    },
+    {
+        label:"Iteration 3",
+        value:'it3'
+    },
+    {
+        label:"Iteration 4",
+        value:'it4'
+    },
+    {
+        label:"Iteration 5",
+        value:'it5'
+    },
+]);
 
-let tMV1 = ref(presetTrainingData.value)
-let tMV2 = ref(presetLabels.value)
-for(let i = 0; i < tMV1.value.length; i++){
-    for(let j = 0; j < 9; j++) {
-        if (tMV1.value[i][j] == 1) {
-            tMV1.value[i][i] = 2
-        } else if (tMV1.value[i][j] == 2) {
-            tMV1.value[i][j] = 1
-        }
-        if (tMV2.value[i][j] == 1) {
-            tMV2.value[i][j] = 2
-        } else if (tMV2.value[i][j] == 2) {
-            tMV2.value[i][j] = 1
-        }
-    }
-}
 function recordTrainingData(tmpArr){
     for(let i = 0; i < tmpArr.value.length; i++){
-        console.log(trainingData)
+        //console.log(trainingData)
         trainingData.value.push(tmpArr.value[i])
     }
 }
@@ -128,8 +302,14 @@ function invertRecordData(recordArr){
     for (let i = 0; i < recordArr.value.length; i++){
         recordArr.value[i] = invertBoardArray(recordArr.value[i])
     }
-    return recordArr
+    return recordArr.value
 }
+
+
+let tMV1 = ref([])
+let tMV2 = ref([])
+tMV1.value = invertRecordData(iteration1Data)
+tMV2.value = invertRecordData(iteration1Labels)
 
 function initialize(){
     recordTrainingData(tMV1)
@@ -237,10 +417,10 @@ function invertBoardArray(tmpArr){
     }
     return tmpArr
 }
-function turntable(index){
+function turntable(index, reportError:boolean = true){
     if(bvalues.value[index] != " "){
-        errorModal.value = true
-        return
+        if(reportError) errorModal.value = true
+        return false
     }
     prevModelValues.value = modelValues.value // Record board before change occurs
     bvalues.value[index] = isturn.value ? "X" : "O"
@@ -253,8 +433,9 @@ function turntable(index){
     recordLabelsData(modelValues)
 
     //Pushing the inverted board to training model
-    recordTrainingData(invertRecordData(prevModelValues))
-    recordLabelsData(invertRecordData(modelValues))
+    //recordTrainingData(invertRecordData(prevModelValues))
+    //recordLabelsData(invertRecordData(modelValues))
+    return true
 }
 function resetGame(){
     document.getElementById("endgame-msg")?.classList.add("hidden")
@@ -276,17 +457,34 @@ function resetGame(){
 }
 const isturn = ref(true)
 
-async function trainModel() {
-    //loadingBar.start()
+async function trainModel(announceMessage: boolean = true) {
+    let success = false
+    loadingBar.start()
+    if(announceMessage) {
+        floatingMessage.info("Training Machine Learning Model...")
+    }
     trainingModal.value = false
+    document.getElementById("config-buttons")?.classList.add("uninteractable")
     console.log(trainingData.value)
-    await model.fit(tf.tensor2d(trainingData.value), tf.tensor2d(labels.value), {epochs: 100}).then(() => {
-        //loadingBar.finish()
-        trainingModal.value = true
-    });
+    try {
+        await model.fit(tf.tensor2d(trainingData.value), tf.tensor2d(labels.value), {epochs: 100}).then(() => {
+            loadingBar.finish()
+            if(announceMessage) {
+                floatingMessage.success("Machine Learning Model Trained Successfully!")
+                trainingModal.value = true
+            }
+            document.getElementById("config-buttons")?.classList.remove("uninteractable")
+            success = true
+        });
+    } catch (e) {
+        floatingMessage.error("Error while Training Machine Learning Model: " + e)
+        success = false
+    }
     trainedTimes.value = model.getWeights().length
+    return success
 }
 const prediction = ref('')
+const argDef = ref(-1)
 function makePrediction() {
     //trainModel()
     if (!model) return;
@@ -298,10 +496,20 @@ function makePrediction() {
     const output = model.predict(gameState);
 
     // Get the predicted move
-    const predictionIndex = output.argMax(-1).dataSync();
-    prediction.value = `(${Math.floor(predictionIndex / 3)}, ${predictionIndex % 3})`;
+    predictionIndex.value = output.argMax(-1).dataSync()[0];
+    prediction.value = `(${Math.floor(predictionIndex.value / 3)}, ${predictionIndex.value % 3})`;
     console.log(prediction)
-    turntable(predictionIndex)
+    let val = turntable(predictionIndex.value,false)
+    let cnt = 0
+    while (!val){
+        console.log((predictionIndex.value + cnt) % 9)
+        val = turntable((predictionIndex.value + cnt) % 9,false)
+        cnt += 1
+        if(cnt > 9){
+            console.log("No more moves available")
+            break
+        }
+    }
 }
 async function clearModelWeights() {
     while (true){
@@ -331,33 +539,42 @@ trainedTimes.value = model.getWeights().length
             title="Results"
             content="Model Training Complete!"
         />
-    <div>
-        <h1>Tic Tac Toe</h1>
-        <h3>...but with Machine Learning!</h3>
-        <br>
-        <h3>You are: X</h3>
-        <h3>Status: {{isturn ? "X's turn" : "O's turn"}}</h3>
-        <h3 class="hidden" id="endgame-msg">{{endmessage}}</h3>
-        <h3 id="trained-amount">Trained Times: {{trainedTimes}}</h3>
-        <!--<h3 class="hidden warning" id="warning-msg">You cannot fill that spot! It is Occupied.</h3>-->
-    </div>
-    <main id="main-container">
-        <input type="button" id="slot-button" class="slot-button" v-for="(text,index) in bvalues" :key="index" v-model="bvalues[index]" @click="turntable(index);"/>
-    </main>
-    <NButton @click="resetGame" class="hidden" id="reset-game-button">Reset Game</NButton>
-    <NButton @click="trainModel" class="hidden" id="train-model-button">Train Model</NButton>
-    <NButton @click="initialize" class="" id="reset-game-button">Initialize Model</NButton>
-    <NButton @click="makePrediction" class="" id="ML-predict-button">Make AI Prediction</NButton>
-    <NButton @click="clearModelWeights" id="clear-model-button">Clear Model</NButton>
+    <NSpace vertical>
+        <div class="middle-align">
+            <h1>Tic Tac Toe</h1>
+            <h3>Powered by Machine Learning</h3>
+            <NSpace align="center" justify="center">
+                <NSelect v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
+                <NButton>Set Iteration</NButton>
+            </NSpace>
+            <br>
+            <h4>You are: X</h4>
+            <h4>Status: {{isturn ? "X's turn" : "O's turn"}}</h4>
+            <h4 class="hidden" id="endgame-msg">{{endmessage}}</h4>
+            <h4 id="trained-amount">Trained Times: {{trainedTimes}}; Prediction Index: {{predictionIndex}}</h4>
+            <!--<h3 class="hidden warning" id="warning-msg">You cannot fill that spot! It is Occupied.</h3>-->
+        </div>
+        <main id="main-container">
+            <input type="button" id="slot-button" class="slot-button" v-for="(text,index) in bvalues" :key="index" v-model="bvalues[index]" @click="turntable(index);"/>
+        </main>
+        <NSpace id="config-buttons">
+            <NButton @click="resetGame" class="hidden" id="reset-game-button">Reset Game</NButton>
+            <NButton @click="trainModel" class="hidden" id="train-model-button">Train Model</NButton>
+            <NButton @click="initialize" class="" id="reset-game-button">Initialize Model</NButton>
+            <NButton @click="makePrediction" class="" id="ML-predict-button">Make AI Prediction</NButton>
+            <NButton @click="clearModelWeights" id="clear-model-button">Clear Model</NButton>
+        </NSpace>
+    </NSpace>
 </template>
 
 <style scoped>
 main {
-    margin: 10px 10px 10px 0px;
+    margin: 10px 10px 10px 10px;
     display: grid;
     grid-template-columns: repeat(3, 50px);
     grid-template-rows: repeat(3, 50px);
     gap: 10px;
+    justify-content: center;
 }
 
 input[type="button"] {
@@ -391,15 +608,16 @@ input[type="button"] {
     font-weight: bold;
     animation: ease-in-out 0.15s;
     border-width: 0px;
-    border-radius: 0px;
+    border-radius: 5px;
     transition: ease-in-out 0.15s;
     background-color: #e0e0e0;
 }
 .slot-button:hover{
     background-color: rgb(176, 239, 161);
     transition: ease-in-out 0.1s;
-    border-width: 3px;
+    border-width: 2px;
     border-color: rgb(53, 128, 36);
+    transform: scale(1.1);
 }
 .slot-button:active{
     background-color: rgb(176, 239, 161);
@@ -410,5 +628,20 @@ input[type="button"] {
 }
 NButton{
     margin: 10px 10px 10px 10px;
+}
+.middle-align{
+    text-align: center;
+}
+h1{
+    font-size: 50px;
+    font-weight: bold;
+}
+h3{
+    font-size: 20px;
+    font-weight: bold;
+}
+h4{
+    font-size: 15px;
+    font-weight: bold;
 }
 </style>
