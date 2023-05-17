@@ -20,7 +20,7 @@ import { NLoadingBarProvider, NSpace, NMessageProvider } from "naive-ui";
       <n-space>
           <n-loading-bar-provider>
               <n-message-provider>
-                  <Main />
+                  <Main class="middle"/>
               </n-message-provider>
           </n-loading-bar-provider>
       </n-space>
@@ -28,8 +28,11 @@ import { NLoadingBarProvider, NSpace, NMessageProvider } from "naive-ui";
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
+Main{
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    align-self: center;
 }
-
 </style>

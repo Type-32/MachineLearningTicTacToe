@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {defineComponent,reactive,ref} from 'vue'
-import {NButton, NModal, NSpace, NSelect, useLoadingBar, useMessage} from 'naive-ui'
+import {NButton, NModal, NSpace, NSelect, NH1, NH2, NH3, NH4, NText, NDivider, useLoadingBar, useMessage} from 'naive-ui'
 import * as tf from '@tensorflow/tfjs';
 
 const model = tf.sequential();
@@ -19,302 +19,347 @@ const predictionIndex = ref(0)
 const errorModal = ref(false)
 const trainingModal = ref(false)
 
+//Contents
+const applyIterationButton = ref(true)// true = enabled, false = disabled; These values are inverted on input at the template section.
+const iterationSelectBar = ref(true)
+const mainContent = ref(false)
+const matchFinished = ref(false)
+
 //Loading bar
 const loadingBar = useLoadingBar()
 const floatingMessage = useMessage()
 
-//Preset Record Array Data - Iteration 1, Horizontal + Perpendicular
-const iteration1Data = ref([
-    //Mid
-    [0,0,0,0,1,0,0,0,0],
-    [0,0,0,0,1,0,0,0,0],
-    [0,0,0,0,1,0,0,0,0],
-    [0,0,0,0,1,0,0,0,0],
+const iterationData = ref([
+    [
+        //Preset Record Array Data - Iteration 1, Horizontal + Perpendicular
+        //Mid
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
 
-    //Mid Left
-    [0,0,0,1,0,0,0,0,0],
-    [0,0,0,1,0,0,0,0,0],
+        //Mid Left
+        [0,0,0,1,0,0,0,0,0],
+        [0,0,0,1,0,0,0,0,0],
 
-    //Mid Right
-    [0,0,0,0,0,1,0,0,0],
-    [0,0,0,0,0,1,0,0,0]
+        //Mid Right
+        [0,0,0,0,0,1,0,0,0],
+        [0,0,0,0,0,1,0,0,0]
+    ],
+    [
+        //Preset Record Array Data - Iteration 2, Diagonal
+        //Top Left
+        [1,0,0,0,0,0,0,0,0],
+        [1,0,0,0,0,0,0,0,0],
+        [1,0,0,0,0,0,0,0,0],
+
+        //Top Right
+        [0,0,1,0,0,0,0,0,0],
+        [0,0,1,0,0,0,0,0,0],
+        [0,0,1,0,0,0,0,0,0],
+
+        //Bottom Right
+        [0,0,0,0,0,0,0,0,1],
+        [0,0,0,0,0,0,0,0,1],
+        [0,0,0,0,0,0,0,0,1],
+
+        //Bottom Left
+        [0,0,0,0,0,0,1,0,0],
+        [0,0,0,0,0,0,1,0,0],
+        [0,0,0,0,0,0,1,0,0]
+    ],
+    [
+        //Preset Record Array Data - Iteration 3, Complementary Horizontal + Perpendicular
+        //Mid
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+
+        //Top Left
+        [1,0,0,0,0,0,0,0,0],
+        [1,0,0,0,0,0,0,0,0],
+        [1,0,0,0,0,0,0,0,0],
+
+        //Top Right
+        [0,0,1,0,0,0,0,0,0],
+        [0,0,1,0,0,0,0,0,0],
+        [0,0,1,0,0,0,0,0,0],
+
+        //Bottom Right
+        [0,0,0,0,0,0,0,0,1],
+        [0,0,0,0,0,0,0,0,1],
+        [0,0,0,0,0,0,0,0,1],
+
+        //Bottom Left
+        [0,0,0,0,0,0,1,0,0],
+        [0,0,0,0,0,0,1,0,0],
+        [0,0,0,0,0,0,1,0,0],
+
+        //Mid Left
+        [0,0,0,1,0,0,0,0,0],
+        [0,0,0,1,0,0,0,0,0],
+
+        //Mid Right
+        [0,0,0,0,0,1,0,0,0],
+        [0,0,0,0,0,1,0,0,0]
+    ],
+    [
+        //Preset Record Array Data - Iteration 4, Complementary Diagonal
+        //Mid
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+
+        //Top Left
+        [1,0,0,0,0,0,0,0,0],
+        [1,0,0,0,0,0,0,0,0],
+        [1,0,0,0,0,0,0,0,0],
+
+        //Top Right
+        [0,0,1,0,0,0,0,0,0],
+        [0,0,1,0,0,0,0,0,0],
+        [0,0,1,0,0,0,0,0,0],
+
+        //Bottom Right
+        [0,0,0,0,0,0,0,0,1],
+        [0,0,0,0,0,0,0,0,1],
+        [0,0,0,0,0,0,0,0,1],
+
+        //Bottom Left
+        [0,0,0,0,0,0,1,0,0],
+        [0,0,0,0,0,0,1,0,0],
+        [0,0,0,0,0,0,1,0,0],
+
+        //Mid Left
+        [0,0,0,1,0,0,0,0,0],
+        [0,0,0,1,0,0,0,0,0],
+
+        //Mid Right
+        [0,0,0,0,0,1,0,0,0],
+        [0,0,0,0,0,1,0,0,0]
+    ]
 ]);
-const iteration1Labels = ref([
-    //Init Mid
-    [1,0,0,0,1,0,0,0,1],
-    [0,0,1,0,1,0,1,0,0],
-    [0,1,0,0,1,0,0,1,0],
-    [0,0,0,1,1,1,0,0,0],
+const iterationLabels = ref([
+    [
+        //Preset Record Labels - Iteration 1, Horizontal + Perpendicular
+        //Init Mid
+        [1,0,0,0,1,0,0,0,1],
+        [0,0,1,0,1,0,1,0,0],
+        [0,1,0,0,1,0,0,1,0],
+        [0,0,0,1,1,1,0,0,0],
 
-    //Init Mid Left
-    [0,0,0,1,1,1,0,0,0],
-    [1,0,0,1,0,0,1,0,0],
+        //Init Mid Left
+        [0,0,0,1,1,1,0,0,0],
+        [1,0,0,1,0,0,1,0,0],
 
-    //Init Mid Right
-    [0,0,0,1,1,1,0,0,0],
-    [0,0,1,0,0,1,0,0,1]
+        //Init Mid Right
+        [0,0,0,1,1,1,0,0,0],
+        [0,0,1,0,0,1,0,0,1]
+    ],
+    [
+        //Preset Record Labels - Iteration 2, Diagonal
+        //Init Top Left
+        [1,0,0,1,0,0,1,0,0],
+        [1,0,0,0,1,0,0,0,1],
+        [1,1,1,0,0,0,0,0,0],
+
+        //Init Top Right
+        [0,0,1,0,0,1,0,0,1],
+        [0,0,1,0,1,0,1,0,0],
+        [1,1,1,0,0,0,0,0,0],
+
+        //Init Bottom Right
+        [0,0,1,0,0,1,0,0,1],
+        [1,0,0,0,1,0,0,0,1],
+        [0,0,0,0,0,0,1,1,1],
+
+        //Init Bottom Left
+        [1,0,0,1,0,0,1,0,0],
+        [0,0,1,0,1,0,1,0,0],
+        [0,0,0,0,0,0,1,1,1]
+    ],
+    [
+        //Preset Record Labels - Iteration 3, Complementary Horizontal + Perpendicular
+        //Init Mid
+        [1,0,0,0,1,0,0,0,1],
+        [0,0,1,0,1,0,1,0,0],
+        [0,1,0,0,1,0,0,1,0],
+        [0,0,0,1,1,1,0,0,0],
+
+        //Init Top Left
+        [1,0,0,1,0,0,1,0,0],
+        [1,0,0,0,1,0,0,0,1],
+        [1,1,1,0,0,0,0,0,0],
+
+        //Init Top Right
+        [0,0,1,0,0,1,0,0,1],
+        [0,0,1,0,1,0,1,0,0],
+        [1,1,1,0,0,0,0,0,0],
+
+        //Init Bottom Right
+        [0,0,1,0,0,1,0,0,1],
+        [1,0,0,0,1,0,0,0,1],
+        [0,0,0,0,0,0,1,1,1],
+
+        //Init Bottom Left
+        [1,0,0,1,0,0,1,0,0],
+        [0,0,1,0,1,0,1,0,0],
+        [0,0,0,0,0,0,1,1,1],
+
+        //Init Mid Left
+        [0,0,0,1,1,1,0,0,0],
+        [1,0,0,1,0,0,1,0,0],
+
+        //Init Mid Right
+        [0,0,0,1,1,1,0,0,0],
+        [0,0,1,0,0,1,0,0,1]
+    ],
+    [
+        //Preset Record Labels - Iteration 4, Complementary Diagonal
+        //Init Mid
+        [1,0,0,0,1,0,0,0,1],
+        [0,0,1,0,1,0,1,0,0],
+        [0,1,0,0,1,0,0,1,0],
+        [0,0,0,1,1,1,0,0,0],
+
+        //Init Top Left
+        [1,0,0,1,0,0,1,0,0],
+        [1,0,0,0,1,0,0,0,1],
+        [1,1,1,0,0,0,0,0,0],
+
+        //Init Top Right
+        [0,0,1,0,0,1,0,0,1],
+        [0,0,1,0,1,0,1,0,0],
+        [1,1,1,0,0,0,0,0,0],
+
+        //Init Bottom Right
+        [0,0,1,0,0,1,0,0,1],
+        [1,0,0,0,1,0,0,0,1],
+        [0,0,0,0,0,0,1,1,1],
+
+        //Init Bottom Left
+        [1,0,0,1,0,0,1,0,0],
+        [0,0,1,0,1,0,1,0,0],
+        [0,0,0,0,0,0,1,1,1],
+
+        //Init Mid Left
+        [0,0,0,1,1,1,0,0,0],
+        [1,0,0,1,0,0,1,0,0],
+
+        //Init Mid Right
+        [0,0,0,1,1,1,0,0,0],
+        [0,0,1,0,0,1,0,0,1]
+    ]
 ]);
-
-//Preset Record Array Data - Iteration 2, Diagonal
-const iteration2Data = ref([
-    //Top Left
-    [1,0,0,0,0,0,0,0,0],
-    [1,0,0,0,0,0,0,0,0],
-    [1,0,0,0,0,0,0,0,0],
-
-    //Top Right
-    [0,0,1,0,0,0,0,0,0],
-    [0,0,1,0,0,0,0,0,0],
-    [0,0,1,0,0,0,0,0,0],
-
-    //Bottom Right
-    [0,0,0,0,0,0,0,0,1],
-    [0,0,0,0,0,0,0,0,1],
-    [0,0,0,0,0,0,0,0,1],
-
-    //Bottom Left
-    [0,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,1,0,0]
-]);
-const iteration2Labels = ref([
-    //Init Top Left
-    [1,0,0,1,0,0,1,0,0],
-    [1,0,0,0,1,0,0,0,1],
-    [1,1,1,0,0,0,0,0,0],
-
-    //Init Top Right
-    [0,0,1,0,0,1,0,0,1],
-    [0,0,1,0,1,0,1,0,0],
-    [1,1,1,0,0,0,0,0,0],
-
-    //Init Bottom Right
-    [0,0,1,0,0,1,0,0,1],
-    [1,0,0,0,1,0,0,0,1],
-    [0,0,0,0,0,0,1,1,1],
-
-    //Init Bottom Left
-    [1,0,0,1,0,0,1,0,0],
-    [0,0,1,0,1,0,1,0,0],
-    [0,0,0,0,0,0,1,1,1]
-]);
-
-//Preset Record Array Data - Iteration 3, Complementary Horizontal + Perpendicular
-const iteration3Data = ref([
-    //Mid
-    [0,0,0,0,1,0,0,0,0],
-    [0,0,0,0,1,0,0,0,0],
-    [0,0,0,0,1,0,0,0,0],
-    [0,0,0,0,1,0,0,0,0],
-
-    //Top Left
-    [1,0,0,0,0,0,0,0,0],
-    [1,0,0,0,0,0,0,0,0],
-    [1,0,0,0,0,0,0,0,0],
-
-    //Top Right
-    [0,0,1,0,0,0,0,0,0],
-    [0,0,1,0,0,0,0,0,0],
-    [0,0,1,0,0,0,0,0,0],
-
-    //Bottom Right
-    [0,0,0,0,0,0,0,0,1],
-    [0,0,0,0,0,0,0,0,1],
-    [0,0,0,0,0,0,0,0,1],
-
-    //Bottom Left
-    [0,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,1,0,0],
-
-    //Mid Left
-    [0,0,0,1,0,0,0,0,0],
-    [0,0,0,1,0,0,0,0,0],
-
-    //Mid Right
-    [0,0,0,0,0,1,0,0,0],
-    [0,0,0,0,0,1,0,0,0]
-]);
-const iteration3Labels = ref([
-    //Init Mid
-    [1,0,0,0,1,0,0,0,1],
-    [0,0,1,0,1,0,1,0,0],
-    [0,1,0,0,1,0,0,1,0],
-    [0,0,0,1,1,1,0,0,0],
-
-    //Init Top Left
-    [1,0,0,1,0,0,1,0,0],
-    [1,0,0,0,1,0,0,0,1],
-    [1,1,1,0,0,0,0,0,0],
-
-    //Init Top Right
-    [0,0,1,0,0,1,0,0,1],
-    [0,0,1,0,1,0,1,0,0],
-    [1,1,1,0,0,0,0,0,0],
-
-    //Init Bottom Right
-    [0,0,1,0,0,1,0,0,1],
-    [1,0,0,0,1,0,0,0,1],
-    [0,0,0,0,0,0,1,1,1],
-
-    //Init Bottom Left
-    [1,0,0,1,0,0,1,0,0],
-    [0,0,1,0,1,0,1,0,0],
-    [0,0,0,0,0,0,1,1,1],
-
-    //Init Mid Left
-    [0,0,0,1,1,1,0,0,0],
-    [1,0,0,1,0,0,1,0,0],
-
-    //Init Mid Right
-    [0,0,0,1,1,1,0,0,0],
-    [0,0,1,0,0,1,0,0,1]
-]);
-
-//Preset Record Array Data - Iteration 4, Complementary Diagonal
-const iteration4Data = ref([
-    //Mid
-    [0,0,0,0,1,0,0,0,0],
-    [0,0,0,0,1,0,0,0,0],
-    [0,0,0,0,1,0,0,0,0],
-    [0,0,0,0,1,0,0,0,0],
-
-    //Top Left
-    [1,0,0,0,0,0,0,0,0],
-    [1,0,0,0,0,0,0,0,0],
-    [1,0,0,0,0,0,0,0,0],
-
-    //Top Right
-    [0,0,1,0,0,0,0,0,0],
-    [0,0,1,0,0,0,0,0,0],
-    [0,0,1,0,0,0,0,0,0],
-
-    //Bottom Right
-    [0,0,0,0,0,0,0,0,1],
-    [0,0,0,0,0,0,0,0,1],
-    [0,0,0,0,0,0,0,0,1],
-
-    //Bottom Left
-    [0,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,1,0,0],
-
-    //Mid Left
-    [0,0,0,1,0,0,0,0,0],
-    [0,0,0,1,0,0,0,0,0],
-
-    //Mid Right
-    [0,0,0,0,0,1,0,0,0],
-    [0,0,0,0,0,1,0,0,0]
-]);
-const iteration4Labels = ref([
-    //Init Mid
-    [1,0,0,0,1,0,0,0,1],
-    [0,0,1,0,1,0,1,0,0],
-    [0,1,0,0,1,0,0,1,0],
-    [0,0,0,1,1,1,0,0,0],
-
-    //Init Top Left
-    [1,0,0,1,0,0,1,0,0],
-    [1,0,0,0,1,0,0,0,1],
-    [1,1,1,0,0,0,0,0,0],
-
-    //Init Top Right
-    [0,0,1,0,0,1,0,0,1],
-    [0,0,1,0,1,0,1,0,0],
-    [1,1,1,0,0,0,0,0,0],
-
-    //Init Bottom Right
-    [0,0,1,0,0,1,0,0,1],
-    [1,0,0,0,1,0,0,0,1],
-    [0,0,0,0,0,0,1,1,1],
-
-    //Init Bottom Left
-    [1,0,0,1,0,0,1,0,0],
-    [0,0,1,0,1,0,1,0,0],
-    [0,0,0,0,0,0,1,1,1],
-
-    //Init Mid Left
-    [0,0,0,1,1,1,0,0,0],
-    [1,0,0,1,0,0,1,0,0],
-
-    //Init Mid Right
-    [0,0,0,1,1,1,0,0,0],
-    [0,0,1,0,0,1,0,0,1]
-]);
-
 //Preset Record Array Data - Iteration 5, Optimal Complementary Horizontal + Perpendicular
-const iteration5Data = ref([
-
-]);
-const iteration5Labels = ref([
-
-]);
-
 //Preset Record Array Data - Iteration 6, Optimal Complementary Diagonal
-const iteration6Data = ref([
-
-]);
-const iteration6Labels = ref([
-
-]);
 
 
 //Training Data Container
 const trainingData = ref([]);
 const labels = ref([]);
-const iterations = ref('it1');
+const iterations = ref(1);
 const iterationSelection = ref([
     {
-        label:"Iteration 1",
-        value:'it1'
+        label:"Model Iteration 1 (\"Vincent\" Epoch 1)",
+        value:1
     },
     {
-        label:"Iteration 2",
-        value:'it2'
+        label:"Model Iteration 2 (\"Gogh\" Epoch 2)",
+        value:2
     },
     {
-        label:"Iteration 3",
-        value:'it3'
+        label:"Model Iteration 3 (\"Xander\" Epoch 3)",
+        value:3
     },
     {
-        label:"Iteration 4",
-        value:'it4'
+        label:"Model Iteration 4 (\"Turing\" Epoch 4)",
+        value:4
     },
     {
-        label:"Iteration 5",
-        value:'it5'
+        label:"Model Iteration 5 (\"Shannon\" Epoch 5)",
+        value:5
+    },
+    {
+        label:"Model Iteration 6 (\"Polar\" Epoch 6)",
+        value:6
     },
 ]);
 
-function recordTrainingData(tmpArr){
-    for(let i = 0; i < tmpArr.value.length; i++){
-        //console.log(trainingData)
-        trainingData.value.push(tmpArr.value[i])
+async function applyIteration(){
+    iterationSelectBar.value = false;
+    applyIterationButton.value = false;
+    clearLabelsData()
+    clearTrainingData()
+    for (let n = 0; n < 2; n++) {
+        for (let i = 0; i < iterations.value; i++) {
+            //console.log(iterationData.value[i])
+            for (let j = 0; j < iterationData.value[i].length; j++) {
+                //console.log(iterationData.value[i][j])
+                recordTrainingData(iterationData.value[i][j])
+                recordTrainingData(invertRecordData(iterationData.value[i][j]))
+            }
+            for (let j = 0; j < iterationLabels.value[i].length; j++) {
+                recordLabelsData(iterationLabels.value[i][j])
+                recordLabelsData(invertRecordData(iterationLabels.value[i][j]))
+            }
+        }
     }
+    let tempFlag:boolean = false
+    try{
+        iterationSelectBar.value = false;
+        applyIterationButton.value = false;
+        floatingMessage.info("Synchronizing Iteration Data...")
+        tempFlag = await trainModel(false)
+    }catch (e) {
+        iterationSelectBar.value = true;
+        applyIterationButton.value = true;
+        floatingMessage.error("An Unexpected Error occurred returning the message: " + e)
+        return false
+    }
+    if(tempFlag) {
+        floatingMessage.success("Synchronized Iteration Data Successfully!")
+        mainContent.value = true;
+        matchFinished.value = false;
+        return true
+    }else{
+        iterationSelectBar.value = true;
+        applyIterationButton.value = true;
+        floatingMessage.error("Unable to synchronize Iteration Data.")
+        mainContent.value=false;
+        return false
+    }
+}
+function returnToSelection(){
+    iterationSelectBar.value = true;
+    applyIterationButton.value = true;
+    //floatingMessage.error("Unable to synchronize Iteration Data.")
+    mainContent.value = false;
+    clearTrainingData()
+    clearLabelsData()
+    resetGame()
+}
+
+function recordTrainingData(tmpArr){
+    trainingData.value.push(tmpArr)
 }
 function recordLabelsData(tmpArr){
-    for(let i = 0; i < tmpArr.value.length; i++){
-        labels.value.push(tmpArr.value[i])
-    }
+    labels.value.push(tmpArr)
+}
+function clearTrainingData(){
+    trainingData.value = []
+}
+function clearLabelsData(){
+    labels.value = []
 }
 function invertRecordData(recordArr){
-    for (let i = 0; i < recordArr.value.length; i++){
-        recordArr.value[i] = invertBoardArray(recordArr.value[i])
+    let tempArr = recordArr
+    for (let i = 0; i < tempArr.length; i++){
+        tempArr[i] = invertBoardArray(tempArr[i])
     }
-    return recordArr.value
-}
-
-
-let tMV1 = ref([])
-let tMV2 = ref([])
-tMV1.value = invertRecordData(iteration1Data)
-tMV2.value = invertRecordData(iteration1Labels)
-
-function initialize(){
-    recordTrainingData(tMV1)
-    recordLabelsData(tMV2)
-    trainModel()
+    return tempArr
 }
 
 function checkEndgame(){
@@ -387,10 +432,7 @@ function checkEndgame(){
         document.getElementById("endgame-msg")?.classList.add("lose-text")
         endmessage.value = "You Lost!"
     }
-    document.getElementById("reset-game-button")?.classList.remove("hidden")
-    document.getElementById("train-model-button")?.classList.remove("hidden")
-    document.getElementById("ML-predict-button")?.classList.add("hidden")
-    document.getElementById("endgame-msg")?.classList.remove("hidden")
+    matchFinished.value = true
     document.getElementById("main-container")?.classList.add("uninteractable")
 }
 
@@ -408,7 +450,7 @@ function scanBoard(){
     return tmpArr
 }
 function invertBoardArray(tmpArr){
-    for(let i = 0; i < 9; i++){
+    for(let i = 0; i < tmpArr.length; i++){
         if(tmpArr[i] == 1){
             tmpArr[i] = 2
         }else if(tmpArr[i] == 2){
@@ -429,8 +471,8 @@ function turntable(index, reportError:boolean = true){
     isturn.value = !isturn.value
 
     //Pushing the normal board to training model
-    recordTrainingData(prevModelValues)
-    recordLabelsData(modelValues)
+    //recordTrainingData(prevModelValues.value)
+    //recordLabelsData(modelValues.value)
 
     //Pushing the inverted board to training model
     //recordTrainingData(invertRecordData(prevModelValues))
@@ -438,7 +480,6 @@ function turntable(index, reportError:boolean = true){
     return true
 }
 function resetGame(){
-    document.getElementById("endgame-msg")?.classList.add("hidden")
     for (let i = 0; i < bvalues.value.length; i++) {
         bvalues.value[i] = " "
     }
@@ -448,10 +489,7 @@ function resetGame(){
     for(let i = 0; i < prevModelValues.value.length; i++){
         prevModelValues.value.pop()
     }
-
-    document.getElementById("reset-game-button")?.classList.add("hidden")
-    document.getElementById("train-model-button")?.classList.add("hidden")
-    document.getElementById("ML-predict-button")?.classList.remove("hidden")
+    matchFinished.value = false
     document.getElementById("main-container")?.classList.remove("uninteractable")
     isturn.value = true
 }
@@ -467,7 +505,7 @@ async function trainModel(announceMessage: boolean = true) {
     document.getElementById("config-buttons")?.classList.add("uninteractable")
     console.log(trainingData.value)
     try {
-        await model.fit(tf.tensor2d(trainingData.value), tf.tensor2d(labels.value), {epochs: 100}).then(() => {
+        await model.fit(tf.tensor2d(trainingData.value), tf.tensor2d(labels.value), {epochs: 200}).then(() => {
             loadingBar.finish()
             if(announceMessage) {
                 floatingMessage.success("Machine Learning Model Trained Successfully!")
@@ -539,30 +577,43 @@ trainedTimes.value = model.getWeights().length
             title="Results"
             content="Model Training Complete!"
         />
-    <NSpace vertical>
+    <NSpace vertical class="middle-align">
+
+        <!--Title Space-->
         <div class="middle-align">
             <h1>Tic Tac Toe</h1>
             <h3>Powered by Machine Learning</h3>
-            <NSpace align="center" justify="center">
-                <NSelect v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
-                <NButton>Set Iteration</NButton>
-            </NSpace>
-            <br>
-            <h4>You are: X</h4>
-            <h4>Status: {{isturn ? "X's turn" : "O's turn"}}</h4>
-            <h4 class="hidden" id="endgame-msg">{{endmessage}}</h4>
-            <h4 id="trained-amount">Trained Times: {{trainedTimes}}; Prediction Index: {{predictionIndex}}</h4>
-            <!--<h3 class="hidden warning" id="warning-msg">You cannot fill that spot! It is Occupied.</h3>-->
         </div>
-        <main id="main-container">
-            <input type="button" id="slot-button" class="slot-button" v-for="(text,index) in bvalues" :key="index" v-model="bvalues[index]" @click="turntable(index);"/>
-        </main>
-        <NSpace id="config-buttons">
-            <NButton @click="resetGame" class="hidden" id="reset-game-button">Reset Game</NButton>
-            <NButton @click="trainModel" class="hidden" id="train-model-button">Train Model</NButton>
-            <NButton @click="initialize" class="" id="reset-game-button">Initialize Model</NButton>
-            <NButton @click="makePrediction" class="" id="ML-predict-button">Make AI Prediction</NButton>
-            <NButton @click="clearModelWeights" id="clear-model-button">Clear Model</NButton>
+        <!--<NText>{{iterationData[1][1]}}</NText>-->
+        <NDivider/>
+        <!--Selection Space-->
+        <NCard class="middle-align" v-if="mainContent === false">
+            <h3>Options</h3>
+            <NSpace align="center" justify="center">
+                <NSelect :disabled="!iterationSelectBar" v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
+                <NButton type="primary" :disabled="!applyIterationButton" @click="applyIteration">Set Iteration</NButton>
+            </NSpace>
+        </NCard>
+
+        <!--Main Space-->
+        <NSpace id="mainContent" vertical v-else>
+            <NSpace id="config-buttons">
+                <NButton type="primary" @click="resetGame" id="reset-game-button" v-show="matchFinished">Reset Game</NButton>
+                <NButton type="primary" @click="trainModel" id="train-model-button" v-show="matchFinished">Train Model</NButton>
+                <!--<NButton @click="initialize" class="" id="reset-game-button">Initialize Model</NButton>-->
+                <NButton type="primary" @click="makePrediction" id="ML-predict-button" v-show="!matchFinished">Make AI Prediction</NButton>
+                <!--<NButton @click="clearModelWeights" id="clear-model-button">Clear Model</NButton>-->
+                <NButton type="primary" @click="returnToSelection" id="return-to-selection-button">Switch Model</NButton>
+            </NSpace>
+            <NSpace vertical>
+                <h4>You are: X</h4>
+                <h4>Status: {{isturn ? "X's turn" : "O's turn"}}</h4>
+                <h4 class="hidden" id="endgame-msg" v-show="matchFinished">{{endmessage}}</h4>
+                <h4 id="trained-amount">Trained Times: {{trainedTimes}}; Prediction Index: {{predictionIndex}}</h4>
+            </NSpace>
+            <main id="main-container">
+                <input type="button" id="slot-button" class="slot-button" v-for="(text,index) in bvalues" :key="index" v-model="bvalues[index]" @click="turntable(index);"/>
+            </main>
         </NSpace>
     </NSpace>
 </template>
