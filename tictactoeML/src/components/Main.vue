@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import {defineComponent,reactive,ref} from 'vue'
-import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NSwitch, NInput, NTabs, NTabPane, useLoadingBar, useMessage} from 'naive-ui'
+import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NSwitch, NInputGroupLabel, NInput, NTabs, NTabPane, useLoadingBar, useMessage} from 'naive-ui'
 import * as tf from '@tensorflow/tfjs';
 import * as fs from 'fs';
 import axios from 'axios';
 
 //Initialize Machine Learning Model
 const model = tf.sequential();
+model.add(tf.layers.dense({units: 9, inputShape: [9], activation: 'relu'}));
 model.add(tf.layers.dense({units: 9, inputShape: [9], activation: 'softmax'}));
 model.compile({loss: 'categoricalCrossentropy', optimizer: 'adam', metrics:['accuracy']});
 
@@ -18,6 +19,8 @@ const prevModelValues = ref([[0,0,0,0,0,0,0,0,0]])
 const trainedTimes = ref(0)
 const predictionIndex = ref(0)
 const setEpochs = ref(100)
+const batchSize = ref(32)
+const learningRate = ref(0.01)
 
 //Modals
 const errorModal = ref(false)
@@ -699,16 +702,6 @@ function makePrediction() {
     }
 }
 
-async function clearModelWeights() {
-    while (true){
-        try {
-            await model.pop()
-        } catch (error) {
-            break
-        }
-    }
-    trainedTimes.value = model.getWeights().length
-}
 trainedTimes.value = model.getWeights().length
 
 function autoTrainData(){
@@ -770,31 +763,51 @@ function autoTrainData(){
         </div>
         <NDivider/>
         <!--Selection Space-->
-        <NCard title="Preset Options" class="middle-align" v-if="mainContent === false" size="medium" style="width: 500px;">
+        <NCard title="Preset Options" class="middle-align" v-if="mainContent === false" size="medium" style="width: 650px;">
             <p>Iteration Model</p>
+            <NSelect :disabled="!iterationSelectBar" v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
+            <br>
             <NInputGroup>
-                        <NSelect :style="{ width: '67%'}" :disabled="!iterationSelectBar" v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
-                        <NInputNumber
-                            :style="{ width: '33%'}"
-                            :disabled="!iterationSelectBar"
-                            v-model:value="setEpochs"
-                            placeholder="Epochs"
-                            :min="100"
-                            :max="5000"
-                        />
-                    </NInputGroup>
+                <NInputNumber
+                    :disabled="!iterationSelectBar"
+                    v-model:value="setEpochs"
+                    placeholder="Epochs"
+                    :min="100"
+                    :max="5000"
+                />
+                <NInputGroupLabel>Epochs</NInputGroupLabel>
+                <NInputNumber
+                    :disabled="!iterationSelectBar"
+                    v-model:value="batchSize"
+                    placeholder="Batch Size"
+                    :min="24"
+                    :max="256"
+                />
+                <NInputGroupLabel>Batch Size</NInputGroupLabel>
+                <NInputNumber
+                    :disabled="!iterationSelectBar"
+                    v-model:value="learningRate"
+                    placeholder="Learning Rate"
+                    :precision="2"
+                    :min="0.01"
+                    :max="1"
+                />
+                <NInputGroupLabel>Learning Rate</NInputGroupLabel>
+            </NInputGroup>
             <p>Model Correction</p>
             <NInputGroup>
-                        <NSelect :style="{ width: '67%'}" :disabled="!iterationSelectBar" v-model:value="correctionMethod" :options="correctionMethodSelect" :consistent-menu-width="false"/>
-                        <NInputNumber
-                            :disabled="!iterationSelectBar"
-                            v-model:value="correctionThreshold"
-                            placeholder="Correction Threshold"
-                            :min="10"
-                            :max="50"
-                            :style="{ width: '33%'}"
-                        />
-                    </NInputGroup>
+                <NSelect :disabled="!iterationSelectBar" v-model:value="correctionMethod" :options="correctionMethodSelect" :consistent-menu-width="false"/>
+                <NInputGroupLabel>Method</NInputGroupLabel>
+                <NInputNumber
+                    :disabled="!iterationSelectBar"
+                    v-model:value="correctionThreshold"
+                    placeholder="Correction Threshold"
+                    :min="10"
+                    :max="50"
+                    :style="{ width: '20%'}"
+                />
+                <NInputGroupLabel>Trials</NInputGroupLabel>
+            </NInputGroup>
             <br>
             <br>
             <NSwitch v-model:value="autoTrainEnabled">
