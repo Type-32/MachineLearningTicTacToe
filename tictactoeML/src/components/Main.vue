@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {defineComponent,reactive,ref} from 'vue'
-import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NInput, NTabs, NTabPane, useLoadingBar, useMessage} from 'naive-ui'
+import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NSwitch, NInput, NTabs, NTabPane, useLoadingBar, useMessage} from 'naive-ui'
 import * as tf from '@tensorflow/tfjs';
 import * as fs from 'fs';
 import axios from 'axios';
@@ -371,6 +371,8 @@ const correctionMethodSelect = ref([
     }
 ]);
 const correctionThreshold = ref(10)
+const autoTrainCount = ref(100)
+const autoTrainEnabled = ref(false)
 
 async function applyIteration(){
     iterationSelectBar.value = false;
@@ -403,6 +405,10 @@ async function applyIteration(){
         floatingMessage.success("Synchronized Iteration Data Successfully!")
         mainContent.value = true;
         matchFinished.value = false;
+        if(autoTrainEnabled.value){
+            console.log("Using Auto Train")
+            autoTrainData()
+        }
         return true
     }else{
         iterationSelectBar.value = true;
@@ -539,6 +545,14 @@ function invertBoardArray(tmpArr){
     }
     return tmpArr
 }
+function assimilateDataArray(assimilateRef:number, tmpArr){
+    for(let i = 0; i < tmpArr.length; i++){
+        if(tmpArr[i] != 0){
+            tmpArr[i] = assimilateRef
+        }
+    }
+    return tmpArr
+}
 function assimilateBoardArray(referenceIndex:number){
     let tmpArr = scanBoard()
     for(let i = 0; i < tmpArr.length; i++){
@@ -558,14 +572,6 @@ function turntable(index, reportError:boolean = true){
     modelValues.value.push(scanBoard()); //Record board after change occurs
     checkEndgame()
     isturn.value = !isturn.value
-
-    //Pushing the normal board to training model
-    //recordTrainingData(prevModelValues.value)
-    //recordLabelsData(modelValues.value)
-
-    //Pushing the inverted board to training model
-    //recordTrainingData(invertRecordData(prevModelValues))
-    //recordLabelsData(invertRecordData(modelValues))
     return true
 }
 function writeModel(){
@@ -650,7 +656,7 @@ function makePrediction() {
     function generatePredictionIndex() {
         // Define the game board state
         let gameState;
-        correctionMethod.value = 2
+        // correctionMethod.value = 2
         if (correctionMethod.value == 1) {
             gameState = tf.tensor2d([scanBoard()]);
         } else if (correctionMethod.value == 2) {
@@ -662,8 +668,6 @@ function makePrediction() {
         } else {
             gameState = tf.tensor2d([scanBoard()]);
         }
-
-
         // Use the model to predict the next move
         const output = model.predict(gameState);
 
@@ -694,6 +698,7 @@ function makePrediction() {
         }
     }
 }
+
 async function clearModelWeights() {
     while (true){
         try {
@@ -705,6 +710,29 @@ async function clearModelWeights() {
     trainedTimes.value = model.getWeights().length
 }
 trainedTimes.value = model.getWeights().length
+
+function autoTrainData(){
+    let tempMValues = ref([]), tempPValues = ref([]);
+    for (let cnt = 0; cnt < autoTrainCount.value;cnt++){
+        while(matchFinished.value == false) {
+            makePrediction()
+        }
+        for(let i = 0; i < modelValues.value.length;i++){
+            tempMValues.value.push(modelValues.value[i])
+        }
+        for(let i = 0; i < prevModelValues.value.length;i++){
+            tempPValues.value.push(prevModelValues.value[i])
+        }
+        resetGame()
+        console.log("Match Finished")
+    }
+    for(let i = 0; i < tempMValues.value.length; i++){
+        modelValues.value.push(tempMValues.value[i])
+        prevModelValues.value.push(tempPValues.value[i])
+    }
+    showModal.value = true;
+    returnToSelection()
+}
 </script>
 
 <template>
@@ -742,70 +770,53 @@ trainedTimes.value = model.getWeights().length
         </div>
         <NDivider/>
         <!--Selection Space-->
-        <NCard title="Preset Options" class="middle-align" v-if="mainContent === false" size="medium" style="width: 500px">
-            <NTabs
-                type="segment"
-                default-value="manual-exp"
-                size="medium"
-                animated
-            >
-                <NTabPane name="manual-exp" tab="Manual Exp.">
-                    <p>Iteration Model</p>
-                    <NInputGroup>
+        <NCard title="Preset Options" class="middle-align" v-if="mainContent === false" size="medium" style="width: 500px;">
+            <p>Iteration Model</p>
+            <NInputGroup>
                         <NSelect :style="{ width: '67%'}" :disabled="!iterationSelectBar" v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
                         <NInputNumber
                             :style="{ width: '33%'}"
                             :disabled="!iterationSelectBar"
                             v-model:value="setEpochs"
-                            placeholder="Integer Value, 100~5000"
+                            placeholder="Epochs"
                             :min="100"
                             :max="5000"
                         />
                     </NInputGroup>
-                    <p>Model Correction</p>
-                    <NInputGroup>
+            <p>Model Correction</p>
+            <NInputGroup>
                         <NSelect :style="{ width: '67%'}" :disabled="!iterationSelectBar" v-model:value="correctionMethod" :options="correctionMethodSelect" :consistent-menu-width="false"/>
                         <NInputNumber
                             :disabled="!iterationSelectBar"
                             v-model:value="correctionThreshold"
-                            placeholder="Integer Value, 10~50"
+                            placeholder="Correction Threshold"
                             :min="10"
                             :max="50"
                             :style="{ width: '33%'}"
                         />
                     </NInputGroup>
-
-                </NTabPane>
-                <NTabPane name="auto-exp" tab="Auto Exp.">
-                    <p>Iteration Model</p>
-                    <NSelect :disabled="!iterationSelectBar" v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
-
-                    <p>Epoch Amount for Training</p>
-                    <NInputNumber
-                        :disabled="!iterationSelectBar"
-                        v-model:value="setEpochs"
-                        placeholder="Integer Value, 100~1000"
-                        :min="100"
-                        :max="1000"
-                    />
-
-                    <p>Model Correction Method</p>
-                    <NSelect :disabled="!iterationSelectBar" v-model:value="correctionMethod" :options="correctionMethodSelect" :consistent-menu-width="false"/>
-
-                    <p>Correction Number Threshold</p>
-                    <NInputNumber
-                        :disabled="!iterationSelectBar"
-                        v-model:value="correctionThreshold"
-                        placeholder="Integer Value, 10~50"
-                        :min="10"
-                        :max="50"
-                    />
-                    <br>
-                    <NButton type="primary" :disabled="!applyIterationButton" @click="applyIteration">    Set Iteration    </NButton>
-                </NTabPane>
-            </NTabs>
             <br>
-            <NButton type="primary" :disabled="!applyIterationButton" @click="applyIteration">    Set Iteration    </NButton>
+            <br>
+            <NSwitch v-model:value="autoTrainEnabled">
+                <template #checked>
+                    Automatic Training Enabled
+                </template>
+                <template #unchecked>
+                    Automatic Training Disabled
+                </template>
+            </NSwitch>
+            <br>
+            <p v-show="autoTrainEnabled">Training Count</p>
+            <NInputNumber
+                v-show="autoTrainEnabled"
+                :disabled="!iterationSelectBar"
+                v-model:value="autoTrainCount"
+                placeholder="Train Counts"
+                :min="50"
+                :max="500"
+            />
+            <br>
+            <NButton class="middle-align" style="margin-right: 5px;" type="primary" :disabled="!applyIterationButton" @click="applyIteration">Train Iteration</NButton>
         </NCard>
 
         <!--Main Space-->
@@ -893,6 +904,9 @@ input[type="button"] {
     border-color: rgb(53, 128, 36);
 }
 NButton{
+    margin: 10px 10px 10px 10px;
+}
+NSwitch{
     margin: 10px 10px 10px 10px;
 }
 .widened-card{
