@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {defineComponent,reactive,ref} from 'vue'
-import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, useLoadingBar, useMessage} from 'naive-ui'
+import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NInput, NTabs, NTabPane, useLoadingBar, useMessage} from 'naive-ui'
 import * as tf from '@tensorflow/tfjs';
 import * as fs from 'fs';
 import axios from 'axios';
@@ -40,8 +40,18 @@ const iterationData = ref([
         //Mid
         [0,0,0,0,1,0,0,0,0],
         [0,0,0,0,1,0,0,0,0],
+        [1,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,1],
+
         [0,0,0,0,1,0,0,0,0],
         [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,1,0],
+        [0,1,0,0,1,0,0,0,0],
+
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,1,0,0,0],
+        [0,0,0,1,1,0,0,0,0],
 
         //Mid Left
         [0,0,0,1,0,0,0,0,0],
@@ -169,9 +179,19 @@ const iterationLabels = ref([
     [
         //Preset Record Labels - Iteration 1, Horizontal + Perpendicular
         //Init Mid
+        [1,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,1],
         [1,0,0,0,1,0,0,0,1],
-        [0,0,1,0,1,0,1,0,0],
+        [1,0,0,0,1,0,0,0,1],
+
+        [0,0,0,0,1,0,0,1,0],
+        [0,1,0,0,1,0,0,0,0],
         [0,1,0,0,1,0,0,1,0],
+        [0,1,0,0,1,0,0,1,0],
+
+        [0,0,0,0,1,1,0,0,0],
+        [0,0,0,1,1,0,0,0,0],
+        [0,0,0,1,1,1,0,0,0],
         [0,0,0,1,1,1,0,0,0],
 
         //Init Mid Left
@@ -630,6 +650,7 @@ function makePrediction() {
     function generatePredictionIndex() {
         // Define the game board state
         let gameState;
+        correctionMethod.value = 2
         if (correctionMethod.value == 1) {
             gameState = tf.tensor2d([scanBoard()]);
         } else if (correctionMethod.value == 2) {
@@ -721,30 +742,68 @@ trainedTimes.value = model.getWeights().length
         </div>
         <NDivider/>
         <!--Selection Space-->
-        <NCard title="Model Options" class="middle-align" v-if="mainContent === false" size="medium">
-            <p>Iteration Model</p>
-            <NSelect :disabled="!iterationSelectBar" v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
-            <br>
-            <p>Epoch Amount for Training</p>
-            <NInputNumber
-                :disabled="!iterationSelectBar"
-                v-model:value="setEpochs"
-                placeholder="Integer Value, 100~5000"
-                :min="100"
-                :max="5000"
-            />
-            <br>
-            <p>Model Correction Method</p>
-            <NSelect :disabled="!iterationSelectBar" v-model:value="correctionMethod" :options="correctionMethodSelect" :consistent-menu-width="false"/>
-            <br>
-            <p>Correction Number Threshold</p>
-            <NInputNumber
-                :disabled="!iterationSelectBar"
-                v-model:value="correctionThreshold"
-                placeholder="Integer Value, 10~50"
-                :min="10"
-                :max="50"
-            />
+        <NCard title="Preset Options" class="middle-align" v-if="mainContent === false" size="medium" style="width: 500px">
+            <NTabs
+                type="segment"
+                default-value="manual-exp"
+                size="medium"
+                animated
+            >
+                <NTabPane name="manual-exp" tab="Manual Exp.">
+                    <p>Iteration Model</p>
+                    <NInputGroup>
+                        <NSelect :style="{ width: '67%'}" :disabled="!iterationSelectBar" v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
+                        <NInputNumber
+                            :style="{ width: '33%'}"
+                            :disabled="!iterationSelectBar"
+                            v-model:value="setEpochs"
+                            placeholder="Integer Value, 100~5000"
+                            :min="100"
+                            :max="5000"
+                        />
+                    </NInputGroup>
+                    <p>Model Correction</p>
+                    <NInputGroup>
+                        <NSelect :style="{ width: '67%'}" :disabled="!iterationSelectBar" v-model:value="correctionMethod" :options="correctionMethodSelect" :consistent-menu-width="false"/>
+                        <NInputNumber
+                            :disabled="!iterationSelectBar"
+                            v-model:value="correctionThreshold"
+                            placeholder="Integer Value, 10~50"
+                            :min="10"
+                            :max="50"
+                            :style="{ width: '33%'}"
+                        />
+                    </NInputGroup>
+
+                </NTabPane>
+                <NTabPane name="auto-exp" tab="Auto Exp.">
+                    <p>Iteration Model</p>
+                    <NSelect :disabled="!iterationSelectBar" v-model:value="iterations" :options="iterationSelection" :consistent-menu-width="false"/>
+
+                    <p>Epoch Amount for Training</p>
+                    <NInputNumber
+                        :disabled="!iterationSelectBar"
+                        v-model:value="setEpochs"
+                        placeholder="Integer Value, 100~1000"
+                        :min="100"
+                        :max="1000"
+                    />
+
+                    <p>Model Correction Method</p>
+                    <NSelect :disabled="!iterationSelectBar" v-model:value="correctionMethod" :options="correctionMethodSelect" :consistent-menu-width="false"/>
+
+                    <p>Correction Number Threshold</p>
+                    <NInputNumber
+                        :disabled="!iterationSelectBar"
+                        v-model:value="correctionThreshold"
+                        placeholder="Integer Value, 10~50"
+                        :min="10"
+                        :max="50"
+                    />
+                    <br>
+                    <NButton type="primary" :disabled="!applyIterationButton" @click="applyIteration">    Set Iteration    </NButton>
+                </NTabPane>
+            </NTabs>
             <br>
             <NButton type="primary" :disabled="!applyIterationButton" @click="applyIteration">    Set Iteration    </NButton>
         </NCard>
@@ -836,6 +895,22 @@ input[type="button"] {
 NButton{
     margin: 10px 10px 10px 10px;
 }
+.widened-card{
+    padding: 0px 50px 10px 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-self: center;
+    justify-items: center;
+}
+.widened-tabs{
+    width: 150%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-self: center;
+    justify-items: center;
+}
 .middle-align{
     text-align: center;
 }
@@ -857,5 +932,6 @@ h4{
 p{
     font-size: 15px;
     margin-bottom: 3px;
+    margin-top: 20px;
 }
 </style>
