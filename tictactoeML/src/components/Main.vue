@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {defineComponent,reactive,ref} from 'vue'
 import {iterationData, iterationLabels} from "./data.ts";
-import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NSwitch, NInputGroupLabel, NInput, NTabs, NTabPane, useLoadingBar, useMessage} from 'naive-ui'
+import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NSwitch, NInputGroupLabel, NCollapse, NCollapseItem, NInput, NTabs, NTabPane, useLoadingBar, useMessage} from 'naive-ui'
 import * as tf from '@tensorflow/tfjs';
 import * as fs from 'fs';
 import axios from 'axios';
@@ -411,26 +411,30 @@ const genrateRandomNumber = (min: number, max: number) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 function makePrediction() {
-    function generatePredictionIndex() {
+    function generatePredictionIndex(reCorrect:boolean = false) {
         // Define the game board state
         let gameState;
         //correctionMethod.value = 2
-        if (correctionMethod.value == 1) {
+        if (correctionMethod.value == 1 && !reCorrect) {
             gameState = tf.tensor2d([scanBoard()]);
-        } else if (correctionMethod.value == 2) {
-            gameState = tf.tensor2d([assimilateBoardArray(1)]);
-        } else if (correctionMethod.value == 3) {
-            gameState = tf.tensor2d([assimilateBoardArray(2)]);
-        } else if (correctionMethod.value == 4) {
-            gameState = tf.tensor2d([invertBoardArray(scanBoard())]);
         } else {
-            gameState = tf.tensor2d([scanBoard()]);
+            if(reCorrect){
+                if (correctionMethod.value == 2) {
+                    gameState = tf.tensor2d([assimilateBoardArray(1)]);
+                } else if (correctionMethod.value == 3) {
+                    gameState = tf.tensor2d([assimilateBoardArray(2)]);
+                } else if (correctionMethod.value == 4) {
+                    gameState = tf.tensor2d([invertBoardArray(scanBoard())]);
+                }
+            } else {
+                gameState = tf.tensor2d([scanBoard()]);
+            }
         }
         // Use the model to predict the next move
-        const output = model.predict(gameState);
+        let outputTensor = model.predict(gameState) as tf.Tensor;
+        let outputArray = Array.from(outputTensor.dataSync());
+        predictionIndex.value = outputArray.indexOf(Math.max(...outputArray));
 
-        // Get the predicted move
-        predictionIndex.value = output.argMax(-1).dataSync()[0];
         prediction.value = `(${Math.floor(predictionIndex.value / 3)}, ${predictionIndex.value % 3})`;
         console.log(prediction)
     }
@@ -445,7 +449,7 @@ function makePrediction() {
             val = turntable((predictionIndex.value + cnt) % 9, false)
         }else if(correctionMethod.value == 5) {
             //console.log((predictionIndex.value + cnt) % 9)
-            val = turntable((abs(predictionIndex.value - cnt)) % 9, false)
+            val = turntable(abs(predictionIndex.value - cnt) % 9, false)
         }else if(correctionMethod.value == 6){
             for(let i = 0; i < 2; i++){
                 val = turntable(abs(predictionIndex.value + cnt * getRoundRobinIndex()) % 9, false)
@@ -454,7 +458,7 @@ function makePrediction() {
         }else if (correctionMethod.value == 7){
             val = turntable(abs(predictionIndex.value + genrateRandomNumber(-cnt, cnt)) % 9, false)
         }else{
-            generatePredictionIndex()
+            generatePredictionIndex(true)
             //console.log((predictionIndex.value + cnt) % 9)
             val = turntable((predictionIndex.value + cnt) % 9, false)
         }
@@ -603,7 +607,6 @@ function autoTrainData(){
                 <NButton type="primary" @click="resetGame" id="reset-game-button" v-show="matchFinished">Reset Game</NButton>
                 <NButton type="primary" @click="trainModel" id="train-model-button" v-show="matchFinished">Train Model</NButton>
                 <!--<NButton @click="initialize" class="" id="reset-game-button">Initialize Model</NButton>-->
-                <!--<NButton type="primary" id="show-model-button" v-show="matchFinished" @click="writeModel">Write Model</NButton>-->
                 <NButton type="primary" @click="makePrediction" id="ML-predict-button" v-show="!matchFinished">Make AI Prediction</NButton>
                 <!--<NButton @click="clearModelWeights" id="clear-model-button">Clear Model</NButton>-->
 
@@ -618,6 +621,16 @@ function autoTrainData(){
             <main id="main-container">
                 <input type="button" id="slot-button" class="slot-button" v-for="(text,index) in bvalues" :key="index" v-model="bvalues[index]" @click="turntable(index);"/>
             </main>
+            <NSpace>
+                <NCollapse>
+                    <NCollapseItem title="Training Model Data" name="1">
+                        <p>{{modelValues}}</p>
+                    </NCollapseItem>
+                    <NCollapseItem title="Labels Model Data" name="2">
+                        <p>{{prevModelValues}}</p>
+                    </NCollapseItem>
+                </NCollapse>
+            </NSpace>
         </NSpace>
     </NSpace>
 </template>
