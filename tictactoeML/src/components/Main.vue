@@ -98,6 +98,14 @@ const correctionMethodSelect = ref([
         value:5
     },
     {
+        label:"Primary Elimination", //1 Cleared Selection Method
+        value:8
+    },
+    {
+        label:"Secondary Elimination", //2 Cleared Selection Method
+        value:9
+    },
+    {
         label:"Round Robin", //Rotational Index Selection Method
         value:6
     },
@@ -131,12 +139,12 @@ async function applyIteration(){
         for (let j = 0; j < iterationData.value[i].length; j++) {
             //console.log(iterationData.value[i][j])
             recordTrainingData(iterationData.value[i][j])
-            recordTrainingData(invertRecordData(iterationData.value[i][j]))
+            //recordTrainingData(invertRecordData(iterationData.value[i][j]))
         }
         for (let j = 0; j < iterationLabels.value[i].length; j++) {
             //console.log(iterationLabels.value[i][j])
             recordLabelsData(iterationLabels.value[i][j])
-            recordLabelsData(invertRecordData(iterationLabels.value[i][j]))
+            //recordLabelsData(invertRecordData(iterationLabels.value[i][j]))
         }
     }
     let tempFlag:boolean = false
@@ -325,43 +333,7 @@ function turntable(index, reportError:boolean = true){
     isturn.value = !isturn.value
     return true
 }
-/*
-function writeModel(){
-    showModal.value = true
-    let it7Data = JSON.parse(fs.readFileSync('data.json','utf-8'));
-    it7Data.push({
-        "trainingData": prevModelValues.value,
-        "labelsData": modelValues.value
-    })
-    axios.post("/path/to/data.json",it7Data)
-        .then(response =>{
-            console.log(response)
-        })
-        .catch(error =>{
-            console.log(error)
-        })
-    fs.writeFileSync('data.json',JSON.stringify(it7Data))
-}
 
-function readModel(){
-    let it7Data;
-    axios.get("/path/to/data.json")
-        .then(response =>{
-            it7Data = JSON.parse(response.data);
-            for(let i = 0; i < it7Data.length; i++){
-                for(let j = 0; j < it7Data[i].trainingData.length; j++){
-                    iterationData.value[6].push(it7Data[i].trainingData[j])
-                    iterationLabels.value[6].push(it7Data[i].labelsData[j])
-                }
-            }
-        })
-        .catch(error =>{
-            console.log(error)
-        })
-    return it7Data
-}
-readModel()
-*/
 function arrayRasterization(array: Array<number>, current: number){
     let tempArray = array;
     if(array[current] != 0) return;
@@ -430,6 +402,15 @@ function resetGame(){
     document.getElementById("main-container")?.classList.remove("uninteractable")
     isturn.value = true
 }
+function eliminateBoardElement(element){
+    let tmpArr = scanBoard()
+    for(let i = 0; i < tmpArr.length; i++){
+        if(tmpArr[i] == element){
+            tmpArr[i] = 0
+        }
+    }
+    return tmpArr
+}
 const isturn = ref(true)
 
 async function trainModel(announceMessage: boolean = true) {
@@ -466,41 +447,66 @@ const genrateRandomNumber = (min: number, max: number) => {
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-function makePrediction() {
-    function generatePredictionIndex(reCorrect:boolean = false) {
+async function makePrediction() {
+    let move, moves;
+    async function generatePredictionIndex(reCorrect: boolean = false) {
         // Define the game board state
         let gameState;
-        //correctionMethod.value = 2
+        //correctionMethod.value = 8
         //reCorrect = true
         if (correctionMethod.value == 1 && !reCorrect) {
-            gameState = tf.tensor2d([scanBoard()]);
+            //showModal.value = true
+            gameState = tf.tensor([scanBoard()]);
         } else {
-            if(reCorrect){
+            if (reCorrect) {
                 if (correctionMethod.value == 2) {
-                    gameState = tf.tensor2d([assimilateBoardArray(1)]);
+                    gameState = tf.tensor([assimilateBoardArray(1)]);
                 } else if (correctionMethod.value == 3) {
-                    gameState = tf.tensor2d([assimilateBoardArray(2)]);
+                    gameState = tf.tensor([assimilateBoardArray(2)]);
                 } else if (correctionMethod.value == 4) {
-                    gameState = tf.tensor2d([invertBoardArray(scanBoard())]);
+                    gameState = tf.tensor([invertBoardArray(scanBoard())]);
+                } else if (correctionMethod.value == 8) {
+                    gameState = tf.tensor([eliminateBoardElement(2)]);
+                } else if (correctionMethod.value == 9) {
+                    gameState = tf.tensor([eliminateBoardElement(1)]);
                 }
             } else {
-                gameState = tf.tensor2d([scanBoard()]);
+                gameState = tf.tensor([scanBoard()]);
             }
         }
         // Use the model to predict the next move
-        let outputTensor = model.predict(gameState) as tf.Tensor;
+        let outputTensor = await model.predict(gameState).flatten();
+        move = await outputTensor.argMax().data()[0];
+        moves = await outputTensor.data();
         let outputArray = Array.from(outputTensor.dataSync());
-        predictionIndex.value = outputArray.indexOf(Math.max(...outputArray));
+        console.log(move)
+        console.log(moves)
+        console.log(outputArray)
 
-        prediction.value = `(${Math.floor(predictionIndex.value / 3)}, ${predictionIndex.value % 3})`;
-        console.log(prediction)
+        outputTensor.dispose()
+        //prediction.value = `(${Math.floor(move / 3)}, ${move % 3})`;
+        //console.log(prediction)
     }
     if (!model) return;
-
-    generatePredictionIndex()
-    let val = turntable(predictionIndex.value,false)
+    loadingBar.start()
+    await generatePredictionIndex()
     let cnt = 0
-    while (!val){
+    while (true){
+        let val = turntable(move,false)
+        if(val){
+            break
+        }
+        try {
+            moves[move] = 0;
+        } catch {
+            if(cnt > correctionThreshold.value){
+                console.log("No more moves available")
+                break
+            }
+        }
+        move = moves.indexOf(Math.max(...moves));
+        cnt += 1
+        /*
         if(correctionMethod.value == 1) {
             //console.log((predictionIndex.value + cnt) % 9)
             val = turntable((predictionIndex.value + cnt) % 9, false)
@@ -518,14 +524,13 @@ function makePrediction() {
             generatePredictionIndex(true)
             //console.log((predictionIndex.value + cnt) % 9)
             val = turntable((predictionIndex.value + cnt) % 9, false)
-        }
-
-        cnt += 1
+        }*/
         if(cnt > correctionThreshold.value){
             console.log("No more moves available")
             break
         }
     }
+    loadingBar.finish()
 }
 
 trainedTimes.value = model.getWeights().length
@@ -576,7 +581,7 @@ function autoTrainData(){
             title="Current Model"
     >
         <p>Training Data:</p>
-        <p>{{tf.tensor2d(trainingData)}}</p>
+        <p>{{tf.tensor2d([scanBoard()])}}</p>
         <p>Labels:</p>
         <p>{{labels}}</p>
     </NModal>
