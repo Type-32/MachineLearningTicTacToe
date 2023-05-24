@@ -20,11 +20,10 @@ const learningRate = ref(0.01)
 
 //Initialize Machine Learning Model
 const model = tf.sequential();
-model.add(tf.layers.dense({units: 9, inputShape: [9], activation: 'relu'}));
-model.add(tf.layers.dense({units: 9, inputShape: [9], activation: 'softmax'}));
-model.add(tf.layers.dense({units: 9, inputShape: [9], activation: 'elu'}));
-model.add(tf.layers.dense({units: 9, inputShape: [9], activation: 'relu'}));
-model.compile({loss: 'categoricalCrossentropy', optimizer: tf.train.adamax(learningRate.value), metrics:['accuracy']});
+model.add(tf.layers.dense({units: 64, inputShape: [9], activation: 'relu'}));
+model.add(tf.layers.dense({units: 64, activation: 'relu'}));
+model.add(tf.layers.dense({units: 9, activation: 'softmax'}));
+model.compile({loss: 'categoricalCrossentropy', optimizer: tf.train.adam(learningRate.value), metrics:['accuracy']});
 
 //Modals
 const errorModal = ref(false)
@@ -124,6 +123,7 @@ const autoTrainCount = ref(100)
 const autoTrainEnabled = ref(false)
 
 async function applyIteration(){
+    //tf.disposeVariables()
     iterationSelectBar.value = false;
     applyIterationButton.value = false;
     for (let i = 0; i < iterations.value; i++) {
@@ -131,14 +131,16 @@ async function applyIteration(){
         for (let j = 0; j < iterationData.value[i].length; j++) {
             //console.log(iterationData.value[i][j])
             recordTrainingData(iterationData.value[i][j])
-            //recordTrainingData(invertRecordData(iterationData.value[i][j]))
+            recordTrainingData(invertRecordData(iterationData.value[i][j]))
         }
         for (let j = 0; j < iterationLabels.value[i].length; j++) {
+            //console.log(iterationLabels.value[i][j])
             recordLabelsData(iterationLabels.value[i][j])
-            //recordLabelsData(invertRecordData(iterationLabels.value[i][j]))
+            recordLabelsData(invertRecordData(iterationLabels.value[i][j]))
         }
     }
     let tempFlag:boolean = false
+    showModal.value = true
     try{
         iterationSelectBar.value = false;
         applyIterationButton.value = false;
@@ -360,6 +362,60 @@ function readModel(){
 }
 readModel()
 */
+function arrayRasterization(array: Array<number>, current: number){
+    let tempArray = array;
+    if(array[current] != 0) return;
+    if (current == 0){
+        tempArray[current]=1
+        arrayRasterization(tempArray, 1)
+        arrayRasterization(tempArray, 3)
+        arrayRasterization(tempArray, 4)
+        tempArray[current]=2
+        arrayRasterization(tempArray, 1)
+        arrayRasterization(tempArray, 3)
+        arrayRasterization(tempArray, 4)
+    }else if(current == 1){
+        tempArray[current]=1
+        arrayRasterization(tempArray, 0)
+        arrayRasterization(tempArray, 4)
+        arrayRasterization(tempArray, 2)
+        tempArray[current]=2
+        arrayRasterization(tempArray, 0)
+        arrayRasterization(tempArray, 4)
+        arrayRasterization(tempArray, 2)
+    }else if(current == 2){
+        tempArray[current]=1
+        arrayRasterization(tempArray, 1)
+        arrayRasterization(tempArray, 4)
+        arrayRasterization(tempArray, 5)
+        tempArray[current]=2
+        arrayRasterization(tempArray, 1)
+        arrayRasterization(tempArray, 4)
+        arrayRasterization(tempArray, 5)
+    }else if(current == 3){
+        tempArray[current]=1
+        arrayRasterization(tempArray, 0)
+        arrayRasterization(tempArray, 1)
+        arrayRasterization(tempArray, 4)
+        arrayRasterization(tempArray, 6)
+        arrayRasterization(tempArray, 7)
+        tempArray[current]=2
+        arrayRasterization(tempArray, 0)
+        arrayRasterization(tempArray, 1)
+        arrayRasterization(tempArray, 4)
+        arrayRasterization(tempArray, 6)
+        arrayRasterization(tempArray, 7)
+    }else if(current == 4){
+        tempArray[current]=1
+        arrayRasterization(tempArray, 1)
+        arrayRasterization(tempArray, 4)
+        arrayRasterization(tempArray, 5)
+        tempArray[current]=2
+        arrayRasterization(tempArray, 1)
+        arrayRasterization(tempArray, 4)
+        arrayRasterization(tempArray, 5)
+    }
+}
 function resetGame(){
     for (let i = 0; i < bvalues.value.length; i++) {
         bvalues.value[i] = " "
@@ -387,7 +443,7 @@ async function trainModel(announceMessage: boolean = true) {
     document.getElementById("config-buttons")?.classList.add("uninteractable")
     console.log(trainingData.value)
     try {
-        await model.fit(tf.tensor2d(trainingData.value), tf.tensor2d(labels.value), {epochs: setEpochs.value, batchSize: batchSize.value}).then(() => {
+        await model.fit(tf.tensor2d(trainingData.value), tf.tensor2d(labels.value), {epochs: setEpochs.value, batchSize: batchSize.value, shuffle:true}).then(() => {
             loadingBar.finish()
             if(announceMessage) {
                 floatingMessage.success("Machine Learning Model Trained Successfully!")
@@ -415,6 +471,7 @@ function makePrediction() {
         // Define the game board state
         let gameState;
         //correctionMethod.value = 2
+        //reCorrect = true
         if (correctionMethod.value == 1 && !reCorrect) {
             gameState = tf.tensor2d([scanBoard()]);
         } else {
@@ -519,9 +576,9 @@ function autoTrainData(){
             title="Current Model"
     >
         <p>Training Data:</p>
-        <p>{{modelValues}}</p>
+        <p>{{tf.tensor2d(trainingData)}}</p>
         <p>Labels:</p>
-        <p>{{prevModelValues}}</p>
+        <p>{{labels}}</p>
     </NModal>
     <NSpace vertical class="middle-align">
 
@@ -740,3 +797,4 @@ p{
     margin-top: 20px;
 }
 </style>
+<!--FrontEnd Code-->
