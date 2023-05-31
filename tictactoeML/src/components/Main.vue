@@ -1,11 +1,23 @@
 <script setup lang="ts">
 import {defineComponent,reactive,ref} from 'vue'
 import {iterationData, iterationLabels} from "./data.ts";
-import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NSwitch, NInputGroupLabel, NCollapse, NCollapseItem, NInput, NTabs, NTabPane, useLoadingBar, useMessage} from 'naive-ui'
+import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NSwitch, NInputGroupLabel, NCollapse, NCollapseItem, NLayoutHeader, NLayout, NInput, NTabs, NTabPane, useLoadingBar, useMessage} from 'naive-ui'
 import * as tf from '@tensorflow/tfjs';
 import * as fs from 'fs';
 import axios from 'axios';
 import {abs} from "@tensorflow/tfjs";
+
+const flipX = (arr) => {
+    // console.log([arr.slice(6), arr.slice(3, 6), arr.slice(0, 3)].flat())
+    // let tempArr:Array<number>, stmp = [arr.slice(6), arr.slice(3, 6), arr.slice(0, 3)].flat(), num = 0;
+    // for(let i = 0; i < 3; i++){
+    //     for(let j = 0; j < 3; j++){
+    //         tempArr.push(stmp[i][j])
+    //     }
+    // }
+    return [arr.slice(6), arr.slice(3, 6), arr.slice(0, 3)].flat();
+};
+const flipY = (arr) => flipX(arr.slice().reverse());
 
 //Board & Record Arrays
 const endmessage = ref("You Tied with the Algorithm!")
@@ -23,7 +35,7 @@ const model = tf.sequential();
 model.add(tf.layers.dense({units: 64, inputShape: [9], activation: 'relu'}));
 model.add(tf.layers.dense({units: 64, activation: 'relu'}));
 model.add(tf.layers.dense({units: 9, activation: 'softmax'}));
-model.compile({loss: 'categoricalCrossentropy', optimizer: tf.train.adam(learningRate.value), metrics:['accuracy']});
+model.compile({loss: 'categoricalCrossentropy', optimizer: tf.train.adamax(learningRate.value), metrics:['accuracy']});
 
 //Modals
 const errorModal = ref(false)
@@ -59,75 +71,51 @@ const labels = ref([]);
 const iterations = ref(1);
 const iterationSelection = ref([
     {
-        label:"Model Iteration 1 (\"Vincent\" Epoch 1)",
+        label:"Prefab Model IT 1 (\"Vincent\" Unit 1)",
         value:1
     },
     {
-        label:"Model Iteration 2 (\"Da Vinci\" Epoch 2)",
+        label:"Prefab Model IT 2 (\"Da Vinci\" Unit 2)",
         value:2
     },
     {
-        label:"Model Iteration 3 (\"Xander\" Epoch 3)",
+        label:"Prefab Model IT 3 (\"Schrödinger\" Unit 3)",
         value:3
-    },
-    {
-        label:"Model Iteration 4 (\"Atomic\" Epoch 4)",
-        value:4
-    },
-    {
-        label:"Model Iteration 5 (\"Watson\" Epoch 5)",
-        value:5
-    },
-    {
-        label:"Model Iteration 6 (\"Bohr\" Epoch 6)",
-        value:6
-    },
-    {
-        label:"Model Iteration 7 (\"Schrödinger\" Epoch 7)",
-        value:7
     }
 ]);
-const correctionMethod = ref(1)
-const correctionMethodSelect = ref([
+const recognitionMethod = ref(1)
+const recogMethodSelection = ref([
     {
-        label:"Accumulation", //Accumulative Index Selection Method
+        label:"Optimization", //Default: Choosing next to be most-probable tensor array element
         value:1
     },
     {
-        label:"Recursion", //Recursive Index Selection Method
-        value:5
+        label:"Degradation", //Inversed Default: Choosing next to be least-probable tensor array element
+        value:2
     },
     {
-        label:"Primary Elimination", //1 Cleared Selection Method
-        value:8
+        label:"Primary Elimination", //Clears all 2s into 0s
+        value:3
     },
     {
-        label:"Secondary Elimination", //2 Cleared Selection Method
-        value:9
-    },
-    {
-        label:"Round Robin", //Rotational Index Selection Method
-        value:6
-    },
-    {
-        label:"Russian Roulette", //Random Selection Selection Method
-        value:7
+        label:"Secondary Elimination", //Clears all 1s into 0s
+        value:4
     },
     {
         label:"Assimilation", //Assimilate all boardValues into 1
-        value:2
+        value:5
     },
     {
         label:"Reverse Assimilation", //Assimilate all boardValues into 2
-        value:3
+        value:6
     },
     {
-        label:"Aversion", //Inverse all boardValues from 1 to 2 and 2 to 1
-        value:4
+        label:"Aversion", //Invert all boardValues from 1 to 2 and 2 to 1
+        value:7
     }
 ]);
 const correctionThreshold = ref(10)
-const autoTrainCount = ref(100)
+const autoTrainCount = ref(10)
 const autoTrainEnabled = ref(false)
 
 async function applyIteration(){
@@ -138,15 +126,24 @@ async function applyIteration(){
         //console.log(iterationData.value[i])
         for (let j = 0; j < iterationData.value[i].length; j++) {
             //console.log(iterationData.value[i][j])
+            //console.log(flipX(iterationData.value[i][j]))
+
             recordTrainingData(iterationData.value[i][j])
+            recordTrainingData(flipX(iterationData.value[i][j]))
+            recordTrainingData(flipY(iterationData.value[i][j]))
+            recordTrainingData(flipX(flipY(iterationData.value[i][j])))
             //recordTrainingData(invertRecordData(iterationData.value[i][j]))
         }
         for (let j = 0; j < iterationLabels.value[i].length; j++) {
             //console.log(iterationLabels.value[i][j])
             recordLabelsData(iterationLabels.value[i][j])
+            recordLabelsData(flipX(iterationLabels.value[i][j]))
+            recordLabelsData(flipY(iterationLabels.value[i][j]))
+            recordLabelsData(flipX(flipY(iterationLabels.value[i][j])))
             //recordLabelsData(invertRecordData(iterationLabels.value[i][j]))
         }
     }
+    //model.compile({loss: 'categoricalCrossentropy', optimizer: tf.train.adam(learningRate.value), metrics:['accuracy']});
     let tempFlag:boolean = false
     showModal.value = true
     try{
@@ -328,65 +325,12 @@ function turntable(index, reportError:boolean = true){
     }
     prevModelValues.value = modelValues.value // Record board before change occurs
     bvalues.value[index] = isturn.value ? "X" : "O"
-    modelValues.value.push(scanBoard()); //Record board after change occurs
+    let tempEmpty = [0,0,0,0,0,0,0,0,0]
+    tempEmpty[index] = isturn.value ? 1 : 2
+    modelValues.value.push(tempEmpty); //Record board after change occurs
     checkEndgame()
     isturn.value = !isturn.value
     return true
-}
-
-function arrayRasterization(array: Array<number>, current: number){
-    let tempArray = array;
-    if(array[current] != 0) return;
-    if (current == 0){
-        tempArray[current]=1
-        arrayRasterization(tempArray, 1)
-        arrayRasterization(tempArray, 3)
-        arrayRasterization(tempArray, 4)
-        tempArray[current]=2
-        arrayRasterization(tempArray, 1)
-        arrayRasterization(tempArray, 3)
-        arrayRasterization(tempArray, 4)
-    }else if(current == 1){
-        tempArray[current]=1
-        arrayRasterization(tempArray, 0)
-        arrayRasterization(tempArray, 4)
-        arrayRasterization(tempArray, 2)
-        tempArray[current]=2
-        arrayRasterization(tempArray, 0)
-        arrayRasterization(tempArray, 4)
-        arrayRasterization(tempArray, 2)
-    }else if(current == 2){
-        tempArray[current]=1
-        arrayRasterization(tempArray, 1)
-        arrayRasterization(tempArray, 4)
-        arrayRasterization(tempArray, 5)
-        tempArray[current]=2
-        arrayRasterization(tempArray, 1)
-        arrayRasterization(tempArray, 4)
-        arrayRasterization(tempArray, 5)
-    }else if(current == 3){
-        tempArray[current]=1
-        arrayRasterization(tempArray, 0)
-        arrayRasterization(tempArray, 1)
-        arrayRasterization(tempArray, 4)
-        arrayRasterization(tempArray, 6)
-        arrayRasterization(tempArray, 7)
-        tempArray[current]=2
-        arrayRasterization(tempArray, 0)
-        arrayRasterization(tempArray, 1)
-        arrayRasterization(tempArray, 4)
-        arrayRasterization(tempArray, 6)
-        arrayRasterization(tempArray, 7)
-    }else if(current == 4){
-        tempArray[current]=1
-        arrayRasterization(tempArray, 1)
-        arrayRasterization(tempArray, 4)
-        arrayRasterization(tempArray, 5)
-        tempArray[current]=2
-        arrayRasterization(tempArray, 1)
-        arrayRasterization(tempArray, 4)
-        arrayRasterization(tempArray, 5)
-    }
 }
 function resetGame(){
     for (let i = 0; i < bvalues.value.length; i++) {
@@ -416,13 +360,13 @@ const isturn = ref(true)
 async function trainModel(announceMessage: boolean = true) {
     let success = false
     loadingBar.start()
-    model.compile({loss: 'categoricalCrossentropy', optimizer: tf.train.adamax(learningRate.value), metrics:['accuracy']});
+    //model.compile({loss: 'categoricalCrossentropy', optimizer: tf.train.adamax(learningRate.value), metrics:['accuracy']});
     if(announceMessage) {
         floatingMessage.info("Training Machine Learning Model...")
     }
     trainingModal.value = false
     document.getElementById("config-buttons")?.classList.add("uninteractable")
-    console.log(trainingData.value)
+    console.log(tf.tensor2d(trainingData.value))
     try {
         await model.fit(tf.tensor2d(trainingData.value), tf.tensor2d(labels.value), {epochs: setEpochs.value, batchSize: batchSize.value, shuffle:true}).then(() => {
             loadingBar.finish()
@@ -453,30 +397,22 @@ async function makePrediction() {
         // Define the game board state
         let gameState;
         //correctionMethod.value = 8
-        //reCorrect = true
-        if (correctionMethod.value == 1 && !reCorrect) {
-            //showModal.value = true
-            gameState = tf.tensor([scanBoard()]);
-        } else {
-            if (reCorrect) {
-                if (correctionMethod.value == 2) {
-                    gameState = tf.tensor([assimilateBoardArray(1)]);
-                } else if (correctionMethod.value == 3) {
-                    gameState = tf.tensor([assimilateBoardArray(2)]);
-                } else if (correctionMethod.value == 4) {
-                    gameState = tf.tensor([invertBoardArray(scanBoard())]);
-                } else if (correctionMethod.value == 8) {
-                    gameState = tf.tensor([eliminateBoardElement(2)]);
-                } else if (correctionMethod.value == 9) {
-                    gameState = tf.tensor([eliminateBoardElement(1)]);
-                }
-            } else {
-                gameState = tf.tensor([scanBoard()]);
-            }
+        reCorrect = true
+        gameState = tf.tensor([scanBoard()]);
+        if (recognitionMethod.value == 3) {
+            gameState = tf.tensor([eliminateBoardElement(2)]);
+        } else if (recognitionMethod.value == 4) {
+            gameState = tf.tensor([eliminateBoardElement(1)]);
+        } else if (recognitionMethod.value == 5) {
+            gameState = tf.tensor([assimilateBoardArray(1)]);
+        } else if (recognitionMethod.value == 6) {
+            gameState = tf.tensor([assimilateBoardArray(2)]);
+        } else if (recognitionMethod.value == 7) {
+            gameState = tf.tensor([invertBoardArray(scanBoard())]);
         }
         // Use the model to predict the next move
         let outputTensor = await model.predict(gameState).flatten();
-        move = await outputTensor.argMax().data()[0];
+        move = recognitionMethod.value == 1 ? await outputTensor.argMax().data()[0] : recognitionMethod.value == 2 ? await outputTensor.argMin().data()[0] : await outputTensor.argMax().data()[0];
         moves = await outputTensor.data();
         let outputArray = Array.from(outputTensor.dataSync());
         console.log(move)
@@ -504,27 +440,8 @@ async function makePrediction() {
                 break
             }
         }
-        move = moves.indexOf(Math.max(...moves));
+        move = moves.indexOf(recognitionMethod.value == 1 ? Math.max(...moves) : recognitionMethod.value == 2 ? Math.min(...moves) : Math.max(...moves));
         cnt += 1
-        /*
-        if(correctionMethod.value == 1) {
-            //console.log((predictionIndex.value + cnt) % 9)
-            val = turntable((predictionIndex.value + cnt) % 9, false)
-        }else if(correctionMethod.value == 5) {
-            //console.log((predictionIndex.value + cnt) % 9)
-            val = turntable(abs(predictionIndex.value - cnt) % 9, false)
-        }else if(correctionMethod.value == 6){
-            for(let i = 0; i < 2; i++){
-                val = turntable(abs(predictionIndex.value + cnt * getRoundRobinIndex()) % 9, false)
-            }
-            val = turntable((predictionIndex.value + cnt) % 9, false)
-        }else if (correctionMethod.value == 7){
-            val = turntable(abs(predictionIndex.value + genrateRandomNumber(-cnt, cnt)) % 9, false)
-        }else{
-            generatePredictionIndex(true)
-            //console.log((predictionIndex.value + cnt) % 9)
-            val = turntable((predictionIndex.value + cnt) % 9, false)
-        }*/
         if(cnt > correctionThreshold.value){
             console.log("No more moves available")
             break
@@ -535,11 +452,11 @@ async function makePrediction() {
 
 trainedTimes.value = model.getWeights().length
 
-function autoTrainData(){
+async function autoTrainData(){
     let tempMValues = ref([]), tempPValues = ref([]);
-    for (let cnt = 0; cnt < autoTrainCount.value;cnt++){
+    for (let cnt = 0; cnt < autoTrainCount.value; cnt++){
         while(matchFinished.value == false) {
-            makePrediction()
+            await makePrediction()
         }
         for(let i = 0; i < modelValues.value.length;i++){
             tempMValues.value.push(modelValues.value[i])
@@ -554,8 +471,26 @@ function autoTrainData(){
         modelValues.value.push(tempMValues.value[i])
         prevModelValues.value.push(tempPValues.value[i])
     }
+    await trainDataAfterGame()
     showModal.value = true;
     returnToSelection()
+}
+async function trainDataAfterGame(){
+    let tempMValues = ref([]), tempPValues = ref([]);
+    for(let i = 0; i < modelValues.value.length;i++){
+        recordLabelsData(modelValues.value[i])
+        recordLabelsData(flipX(modelValues.value[i]))
+        recordLabelsData(flipY(modelValues.value[i]))
+        recordLabelsData(flipX(flipY(modelValues.value[i])))
+    }
+    for(let i = 0; i < prevModelValues.value.length;i++){
+        recordTrainingData(prevModelValues.value[i])
+        recordTrainingData(flipX(prevModelValues.value[i]))
+        recordTrainingData(flipY(prevModelValues.value[i]))
+        recordTrainingData(flipX(flipY(prevModelValues.value[i])))
+    }
+    await trainModel()
+    resetGame()
 }
 </script>
 
@@ -581,9 +516,9 @@ function autoTrainData(){
             title="Current Model"
     >
         <p>Training Data:</p>
-        <p>{{tf.tensor2d([scanBoard()])}}</p>
+        <p>{{tf.tensor2d(trainingData)}}</p>
         <p>Labels:</p>
-        <p>{{labels}}</p>
+        <p>{{tf.tensor2d(labels)}}</p>
     </NModal>
     <NSpace vertical class="middle-align">
 
@@ -627,7 +562,7 @@ function autoTrainData(){
             </NInputGroup>
             <p>Model Correction</p>
             <NInputGroup>
-                <NSelect :disabled="!iterationSelectBar" v-model:value="correctionMethod" :options="correctionMethodSelect" :consistent-menu-width="false"/>
+                <NSelect :disabled="!iterationSelectBar" v-model:value="recognitionMethod" :options="recogMethodSelection" :consistent-menu-width="false"/>
                 <NInputGroupLabel>Method</NInputGroupLabel>
                 <NInputNumber
                     :disabled="!iterationSelectBar"
@@ -667,7 +602,7 @@ function autoTrainData(){
         <NSpace id="mainContent" vertical v-else>
             <NSpace id="config-buttons">
                 <NButton type="primary" @click="resetGame" id="reset-game-button" v-show="matchFinished">Reset Game</NButton>
-                <NButton type="primary" @click="trainModel" id="train-model-button" v-show="matchFinished">Train Model</NButton>
+                <NButton type="primary" @click="trainDataAfterGame" id="train-model-button" v-show="matchFinished">Train Model</NButton>
                 <!--<NButton @click="initialize" class="" id="reset-game-button">Initialize Model</NButton>-->
                 <NButton type="primary" @click="makePrediction" id="ML-predict-button" v-show="!matchFinished">Make AI Prediction</NButton>
                 <!--<NButton @click="clearModelWeights" id="clear-model-button">Clear Model</NButton>-->
@@ -675,7 +610,7 @@ function autoTrainData(){
                 <NButton type="primary" @click="returnToSelection" id="return-to-selection-button">Switch Model</NButton>
             </NSpace>
             <NSpace vertical>
-                <h4>You are: X</h4>
+                <h4>You are: O</h4>
                 <h4>Status: {{isturn ? "X's turn" : "O's turn"}}</h4>
                 <h4 class="" id="endgame-msg" v-show="matchFinished">{{endmessage}}</h4>
                 <h4 id="trained-amount">Trained Times: {{trainedTimes}}; Prediction Index: {{predictionIndex}}</h4>

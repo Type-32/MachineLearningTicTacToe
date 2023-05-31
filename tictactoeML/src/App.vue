@@ -2,7 +2,24 @@
 import HelloWorld from './components/HelloWorld.vue'
 import TheWelcome from './components/TheWelcome.vue'
 import Main from "@/components/Main.vue";
-import { NLoadingBarProvider, NSpace, NMessageProvider } from "naive-ui";
+import { ref } from "vue";
+import { NLoadingBarProvider, NSpace, NMessageProvider, NLayoutHeader, NLayout, NMenu, NIcon, NDivider, NListItem, NList } from "naive-ui";
+import Documentation from "@/components/Documentation.vue";
+
+const pages = ref([
+    {
+        label: 'Game',
+        key: 'game',
+        disabled: false
+    },
+    {
+        label: 'Documentation',
+        key: 'docs',
+        disabled: false
+    }
+])
+const pageView = ref('game')
+
 </script>
 
 <template>
@@ -20,7 +37,11 @@ import { NLoadingBarProvider, NSpace, NMessageProvider } from "naive-ui";
       <n-space>
           <n-loading-bar-provider>
               <n-message-provider>
-                  <Main class="middle"/>
+                  <NLayoutHeader bordered>
+                      <NMenu mode="horizontal" :value="pageView" :options="pages" style="align-content: center; justify-items: center; display: flex;"/>
+                  </NLayoutHeader>
+                  <Main class="middle" v-if="pageView == 'game'"/>
+                  <Documentation class="middle" v-else-if="pageView == 'docs'"/>
               </n-message-provider>
           </n-loading-bar-provider>
       </n-space>
@@ -34,5 +55,31 @@ Main{
     justify-content: center;
     align-items: center;
     align-self: center;
+}
+header {
+    background-color: #f6f6f6;
+    color: #fff;
+    padding: 10px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+n-menu{
+    display: flex;
+    justify-content: left;
+    align-items: flex-start;
+}
+n-li{
+    list-style-type: none;
+    padding: 1px;
+    margin: 5px;
+}
+n-li a{
+    text-decoration: #4be831;
+    color: #000000;
+}
+n-li a:hover{
+    color: #8cce7e;
 }
 </style>
