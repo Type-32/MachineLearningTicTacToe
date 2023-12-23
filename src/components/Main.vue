@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import {defineComponent,reactive,ref} from 'vue'
-import {iterationData, iterationLabels} from "./data.ts";
-import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NSwitch, NInputGroupLabel, NCollapse, NCollapseItem, NLayoutHeader, NLayout, NInput, NTabs, NTabPane, useLoadingBar, useMessage} from 'naive-ui'
+import {ref} from 'vue'
+// @ts-ignore
+import {iterationData, iterationLabels} from "@/components/data.ts";
+import {NButton, NModal, NSpace, NSelect, NCard, NDivider, NInputNumber, NInputGroup, NSwitch, NInputGroupLabel, NCollapse, NCollapseItem, useLoadingBar, useMessage} from 'naive-ui'
 import * as tf from '@tensorflow/tfjs';
-import * as fs from 'fs';
-import axios from 'axios';
-import {abs} from "@tensorflow/tfjs";
 
-const flipX = (arr) => {
+const flipX = (arr: any) => {
     // console.log([arr.slice(6), arr.slice(3, 6), arr.slice(0, 3)].flat())
     // let tempArr:Array<number>, stmp = [arr.slice(6), arr.slice(3, 6), arr.slice(0, 3)].flat(), num = 0;
     // for(let i = 0; i < 3; i++){
@@ -17,7 +15,7 @@ const flipX = (arr) => {
     // }
     return [arr.slice(6), arr.slice(3, 6), arr.slice(0, 3)].flat();
 };
-const flipY = (arr) => flipX(arr.slice().reverse());
+const flipY = (arr: any) => flipX(arr.slice().reverse());
 
 //Board & Record Arrays
 const endmessage = ref("You Tied with the Algorithm!")
@@ -52,22 +50,9 @@ const matchFinished = ref(false)
 const loadingBar = useLoadingBar()
 const floatingMessage = useMessage()
 
-function getRoundRobinIndex(){
-    let index = 0
-    if (indexRotation.value == false) {
-        index = 0
-        indexRotation.value = true
-    } else {
-        index = 1
-        indexRotation.value = false
-    }
-    return index
-}
-
 //Training Data Container
-const indexRotation = ref(false)
-const trainingData = ref([]);
-const labels = ref([]);
+const trainingData = ref<number[][]>([]);
+const labels = ref<number[][]>([]);
 const iterations = ref(1);
 const iterationSelection = ref([
     {
@@ -184,10 +169,10 @@ function returnToSelection(){
     resetGame()
 }
 
-function recordTrainingData(tmpArr){
+function recordTrainingData(tmpArr: number[]){
     trainingData.value.push(tmpArr)
 }
-function recordLabelsData(tmpArr){
+function recordLabelsData(tmpArr: number[]){
     labels.value.push(tmpArr)
 }
 function clearTrainingData(){
@@ -195,13 +180,6 @@ function clearTrainingData(){
 }
 function clearLabelsData(){
     labels.value = []
-}
-function invertRecordData(recordArr){
-    let tempArr = recordArr
-    for (let i = 0; i < tempArr.length; i++){
-        tempArr[i] = invertBoardArray(tempArr[i])
-    }
-    return tempArr
 }
 
 function checkEndgame(){
@@ -291,20 +269,12 @@ function scanBoard(){
     }
     return tmpArr
 }
-function invertBoardArray(tmpArr){
+function invertBoardArray(tmpArr: number[]){
     for(let i = 0; i < tmpArr.length; i++){
         if(tmpArr[i] == 1){
             tmpArr[i] = 2
         }else if(tmpArr[i] == 2){
             tmpArr[i] = 1
-        }
-    }
-    return tmpArr
-}
-function assimilateDataArray(assimilateRef:number, tmpArr){
-    for(let i = 0; i < tmpArr.length; i++){
-        if(tmpArr[i] != 0){
-            tmpArr[i] = assimilateRef
         }
     }
     return tmpArr
@@ -318,7 +288,7 @@ function assimilateBoardArray(referenceIndex:number){
     }
     return tmpArr
 }
-function turntable(index, reportError:boolean = true){
+function turntable(index: number, reportError: boolean = true){
     if(bvalues.value[index] != " "){
         if(reportError) errorModal.value = true
         return false
@@ -346,7 +316,7 @@ function resetGame(){
     document.getElementById("main-container")?.classList.remove("uninteractable")
     isturn.value = true
 }
-function eliminateBoardElement(element){
+function eliminateBoardElement(element: number){
     let tmpArr = scanBoard()
     for(let i = 0; i < tmpArr.length; i++){
         if(tmpArr[i] == element){
@@ -384,20 +354,12 @@ async function trainModel(announceMessage: boolean = true) {
     trainedTimes.value = model.getWeights().length
     return success
 }
-const prediction = ref('')
-const argDef = ref(-1)
-const genrateRandomNumber = (min: number, max: number) => {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 async function makePrediction() {
-    let move, moves;
-    async function generatePredictionIndex(reCorrect: boolean = false) {
+    let move, moves: any;
+    async function generatePredictionIndex(reCorrect: boolean = true) {
         // Define the game board state
         let gameState;
         //correctionMethod.value = 8
-        reCorrect = true
         gameState = tf.tensor([scanBoard()]);
         if (recognitionMethod.value == 3) {
             gameState = tf.tensor([eliminateBoardElement(2)]);
@@ -411,6 +373,7 @@ async function makePrediction() {
             gameState = tf.tensor([invertBoardArray(scanBoard())]);
         }
         // Use the model to predict the next move
+        // @ts-ignore
         let outputTensor = await model.predict(gameState).flatten();
         move = recognitionMethod.value == 1 ? await outputTensor.argMax().data()[0] : recognitionMethod.value == 2 ? await outputTensor.argMin().data()[0] : await outputTensor.argMax().data()[0];
         moves = await outputTensor.data();
@@ -453,7 +416,7 @@ async function makePrediction() {
 trainedTimes.value = model.getWeights().length
 
 async function autoTrainData(){
-    let tempMValues = ref([]), tempPValues = ref([]);
+    let tempMValues = ref<number[][]>([]), tempPValues = ref<number[][]>([]);
     for (let cnt = 0; cnt < autoTrainCount.value; cnt++){
         while(matchFinished.value == false) {
             await makePrediction()
@@ -476,7 +439,6 @@ async function autoTrainData(){
     returnToSelection()
 }
 async function trainDataAfterGame(){
-    let tempMValues = ref([]), tempPValues = ref([]);
     for(let i = 0; i < modelValues.value.length;i++){
         recordLabelsData(modelValues.value[i])
         recordLabelsData(flipX(modelValues.value[i]))
@@ -645,34 +607,11 @@ main {
 input[type="button"] {
     margin: 0;
 }
-.uninteractable{
-    pointer-events: none;
-}
-.warning{
-    color: red;
-    font-weight: bold;
-}
-.hidden{
-    visibility: hidden;
-    display: none;
-}
-.win-text{
-    color: green;
-    font-weight: bold;
-}
-.lose-text{
-    color: red;
-    font-weight: bold;
-}
-.tie-text{
-    color: #ffb700;
-    font-weight: bold;
-}
 .slot-button{
     font-size: 25px;
     font-weight: bold;
     animation: ease-in-out 0.15s;
-    border-width: 0px;
+    border-width: 0;
     border-radius: 5px;
     transition: ease-in-out 0.15s;
     background-color: #e0e0e0;
@@ -697,39 +636,23 @@ NButton{
 NSwitch{
     margin: 10px 10px 10px 10px;
 }
-.widened-card{
-    padding: 0px 50px 10px 50px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    align-self: center;
-    justify-items: center;
-}
-.widened-tabs{
-    width: 150%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    align-self: center;
-    justify-items: center;
-}
 .middle-align{
     text-align: center;
 }
 h1{
     font-size: 50px;
     font-weight: bold;
-    margin-bottom: 0px;
+    margin-bottom: 0;
 }
 h3{
     font-size: 20px;
     font-weight: bold;
-    margin-bottom: 0px;
+    margin-bottom: 0;
 }
 h4{
     font-size: 15px;
     font-weight: bold;
-    margin-bottom: 0px;
+    margin-bottom: 0;
 }
 p{
     font-size: 15px;

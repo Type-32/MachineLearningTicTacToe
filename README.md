@@ -1,6 +1,10 @@
-# tictactoeML
+# Machine Learning Tic Tac Toe
+This is a project I was working on for my school's science fair.
+This project mainly uses TensorFlow.js as the ML Algorithm Model for training.
 
-This template should help get you started developing with Vue 3 in Vite.
+> **Frameworks used:** Vue.js + Vite + CSS _(Updated December 23, 2023)_
+
+_Unfortunately I haven't learned TailwindCSS by this point, so styling the page of this project has been extremely painful. (New Comment on Dec 17, 2023)_
 
 ## Recommended IDE Setup
 

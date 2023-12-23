@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
 import Main from "@/components/Main.vue";
 import { ref } from "vue";
-import { NLoadingBarProvider, NSpace, NMessageProvider, NLayoutHeader, NLayout, NMenu, NIcon, NDivider, NListItem, NList } from "naive-ui";
+import { NLoadingBarProvider, NSpace, NMessageProvider, NLayoutHeader, NMenu } from "naive-ui";
 import Documentation from "@/components/Documentation.vue";
 
 const pages = ref([
